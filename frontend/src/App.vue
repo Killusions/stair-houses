@@ -1,30 +1,136 @@
-html, body {
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  margin: 0;
-  border: none;
-  font-size: calc(6px + 1.5vw);
-}
+<script setup lang="ts">
+import type { AppRouter } from '../../backend/dist/router';
+import { createTRPCClient } from '@trpc/client';
 
-@media (min-aspect-ratio: 7/2) {
-  html, body {
-    font-size: calc(5px + 1.6vw);
+const client = createTRPCClient<AppRouter>({
+  url: 'http://localhost:3030/trpc',
+});
+
+(async () => {
+  const user = await client.mutation('createUser', { name: 'hans', bio: 'dfasdf' });
+  console.log(user);
+
+  const userAgain = await client.query('getUserById', user.id);
+  console.log(userAgain);
+})();
+
+const data = {
+  red: 0,
+  blue: 0,
+  purple: 0,
+  grey: 0,
+  orange: 0,
+  yellow: 0
+};
+
+const placesStrings = [
+  '1st',
+  '2nd',
+  '3rd',
+  '4th',
+  '5th',
+  '6th'
+];
+
+const lastString = '';
+
+const scale = 2.1;
+
+const highestPoints = Math.max(...Object.values(data));
+
+const pointsMaxIndex = scale * highestPoints;
+
+let loading = true;
+
+const dataNormalizedArray: [string, number, number][] = Object.keys(data).map(key => [key, data[key as keyof typeof data] / pointsMaxIndex, data[key as keyof typeof data]]);
+
+const randomOrder: {[key: string]: number} = {};
+
+dataNormalizedArray.sort((a, b) => {
+if (a[1] < b[1]) {
+  return 1;
+}
+if (a[1] > b[1]) {
+  return -1;
+}
+const previousRandom = randomOrder[a[0] + '-' + b[0]];
+if (previousRandom) {
+  console.log('previous random');
+  return 0;
+} else {
+  const random = Math.random();
+  randomOrder[a[0] + '-' + b[0]] = random;
+  if (random < 0.5) {
+    return 1;
+  } else {
+    return -1;
   }
 }
+});
 
-@media (max-aspect-ratio: 1/1) {
-  html, body {
-    font-size: calc(5px + 1.6vh);
-  }
-}
+let previousScore = -1;
+let previousPlaceString = '';
 
-@media (max-aspect-ratio: 4/9) {
-  html, body {
-    font-size: calc(6px + 1.5vh);
-  }
-}
+const displayData: { color: string, colorString: string, points: number, relativePercentage: number, badgeString: string, badgeClass?: string }[] = dataNormalizedArray.map((item, index) => {
+  let badgeString = '';
+  let badgeClass = '';
+  if (item[2] === previousScore) {
+        badgeString = previousPlaceString;
+      } else {
+        if (lastString && (item[2] === 0 || index === dataNormalizedArray.length - 1 || !dataNormalizedArray.slice(index).find(searchItem => searchItem[2] < item[2]))) {
+          previousPlaceString = lastString;
+        } else {
+          previousPlaceString = placesStrings[index] ?? '';
+        }
+        badgeString = previousPlaceString;
+        previousScore = item[2];
+      }
+      
+      if (placesStrings[0] === previousPlaceString) {
+        badgeClass = 'first';
+      } else if (placesStrings[1] === previousPlaceString) {
+        badgeClass = 'second';
+      } else if (placesStrings[2] === previousPlaceString) {
+        badgeClass = 'third';
+      } else if (lastString && lastString === previousPlaceString) {
+        badgeClass = 'last';
+      }
+  return { color: item[0], colorString: item[0].charAt(0).toUpperCase() + item[0].slice(1), points: item[2], relativePercentage: item[1] * 100, badgeString, badgeClass };
+});
 
+loading = false;
+</script>
+
+<template>
+<div v-if="loading" class="loading">
+  Loading scores...
+</div>
+<div class="container">
+  <div class="header">
+    <img src="./assets/stairwhite.png" @click="window.location.replace('/')" class="logo">
+    <div class="title">Houses</div>
+  </div>
+  <div v-if="displayData" class="content">
+    <div v-for="data in displayData" :key="data.color" class="house" v-bind:class="[data.color]">
+      <div class="points" v-bind:style="{ height: data.relativePercentage + '%' }">
+      </div>
+      <div class="name">
+        {{data.colorString}}
+        <div class="score">
+          <span class="number">
+            {{data.points}}
+          </span>
+          <span class="badge" v-bind:class="[data.badgeClass]">
+            {{data.badgeString}}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<style scoped lang="scss">
 .container {
   width: 100%;
   height: 100%;
@@ -62,7 +168,6 @@ html, body {
   display: grid;
   grid-template-rows: 1fr 1fr;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-areas: "a b c" "d e f";
   width: calc(100% - 1rem);
   height: calc(88% - 1rem);
   padding: 0.5rem;
@@ -249,3 +354,4 @@ html, body {
 .badge.last {
   background-color: #871010;
 }
+</style>
