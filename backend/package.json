@@ -8,11 +8,22 @@
     "start": "nodemon dist/index.js",
     "watch": "tsc -w",
     "serve": "nodemon --watch dist/  dist/index.js",
-    "test": "echo \\\"Error: no test specified\\\" && exit 1"
+    "test": "echo \\\"Error: no test specified\\\" && exit 1",
+    "types:serve": "yarn types:build && http-server docs",
+    "types:build": "typedoc src/*"
   },
   "devDependencies": {
     "@types/node": "^17.0.23",
+    "http-server": "^14.1.0",
     "nodemon": "^2.0.15",
+    "typedoc": "^0.22.13",
     "typescript": "^4.6.3"
+  },
+  "dependencies": {
+    "@trpc/server": "^9.20.3",
+    "fastify": "^3.27.4",
+    "fastify-cors": "^6.0.3",
+    "fastify-plugin": "^3.0.1",
+    "zod": "^3.14.3"
   }
 }

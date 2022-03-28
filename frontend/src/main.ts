@@ -1,4 +1,20 @@
-import './style.scss'
+import './style.scss';
+
+// pages/index.tsx
+import type { AppRouter } from '../../backend/dist/router';
+import { createTRPCClient } from '@trpc/client';
+
+const client = createTRPCClient<AppRouter>({
+  url: 'http://localhost:3030/trpc',
+});
+
+(async () => {
+  const user = await client.mutation('createUser', { name: 'hans', bio: 'dfasdf' });
+  console.log(user);
+
+  const userAgain = await client.query('getUserById', user.id);
+  console.log(userAgain);
+})();
 
 const data = {
   red: 0,
