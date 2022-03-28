@@ -1,108 +1,35 @@
 <script setup lang="ts">
-import type { AppRouter } from '../../backend/dist/router';
-import { createTRPCClient } from '@trpc/client';
+import { BehaviorSubject } from 'rxjs';
+import { ref } from 'vue';
+import { addPoints, DisplayData, getPoints, subscribePoints, zeroData } from './data';
 
-const client = createTRPCClient<AppRouter>({
-  url: 'http://localhost:3030/trpc',
-});
+const displayData: BehaviorSubject<DisplayData> = subscribePoints();
 
-(async () => {
-  const user = await client.mutation('createUser', { name: 'hans', bio: 'dfasdf' });
-  console.log(user);
+const displayActualData = ref(displayData.value);
 
-  const userAgain = await client.query('getUserById', user.id);
-  console.log(userAgain);
-})();
-
-const data = {
-  red: 0,
-  blue: 0,
-  purple: 0,
-  grey: 0,
-  orange: 0,
-  yellow: 0
-};
-
-const placesStrings = [
-  '1st',
-  '2nd',
-  '3rd',
-  '4th',
-  '5th',
-  '6th'
-];
-
-const lastString = '';
-
-const scale = 2.1;
-
-const highestPoints = Math.max(...Object.values(data));
-
-const pointsMaxIndex = scale * highestPoints;
-
-let loading = true;
-
-const dataNormalizedArray: [string, number, number][] = Object.keys(data).map(key => [key, data[key as keyof typeof data] / pointsMaxIndex, data[key as keyof typeof data]]);
-
-const randomOrder: {[key: string]: number} = {};
-
-dataNormalizedArray.sort((a, b) => {
-if (a[1] < b[1]) {
-  return 1;
-}
-if (a[1] > b[1]) {
-  return -1;
-}
-const previousRandom = randomOrder[a[0] + '-' + b[0]];
-if (previousRandom) {
-  console.log('previous random');
-  return 0;
-} else {
-  const random = Math.random();
-  randomOrder[a[0] + '-' + b[0]] = random;
-  if (random < 0.5) {
-    return 1;
-  } else {
-    return -1;
+displayData.subscribe(data => {
+  if (data !== zeroData) {
+    loading.value = false;
   }
-}
-});
+  displayActualData.value = data;
+})
 
-let previousScore = -1;
-let previousPlaceString = '';
+getPoints();
 
-const displayData: { color: string, colorString: string, points: number, relativePercentage: number, badgeString: string, badgeClass?: string }[] = dataNormalizedArray.map((item, index) => {
-  let badgeString = '';
-  let badgeClass = '';
-  if (item[2] === previousScore) {
-        badgeString = previousPlaceString;
-      } else {
-        if (lastString && (item[2] === 0 || index === dataNormalizedArray.length - 1 || !dataNormalizedArray.slice(index).find(searchItem => searchItem[2] < item[2]))) {
-          previousPlaceString = lastString;
-        } else {
-          previousPlaceString = placesStrings[index] ?? '';
-        }
-        badgeString = previousPlaceString;
-        previousScore = item[2];
-      }
-      
-      if (placesStrings[0] === previousPlaceString) {
-        badgeClass = 'first';
-      } else if (placesStrings[1] === previousPlaceString) {
-        badgeClass = 'second';
-      } else if (placesStrings[2] === previousPlaceString) {
-        badgeClass = 'third';
-      } else if (lastString && lastString === previousPlaceString) {
-        badgeClass = 'last';
-      }
-  return { color: item[0], colorString: item[0].charAt(0).toUpperCase() + item[0].slice(1), points: item[2], relativePercentage: item[1] * 100, badgeString, badgeClass };
-});
+let loading = ref(true);
 
-loading = false;
+const addPointToColor = async (color: string) => {
+  try {
+    console.log('add to ' + color);
+    await addPoints(color, 1);
+  } catch (e) {
+    console.error(e);
+  }
+};
 </script>
 
 <template>
-<div v-if="loading" class="loading">
+<div class="loading" v-bind:class="{hide: !loading}">
   Loading scores...
 </div>
 <div class="container">
@@ -110,8 +37,8 @@ loading = false;
     <img src="./assets/stairwhite.png" @click="window.location.replace('/')" class="logo">
     <div class="title">Houses</div>
   </div>
-  <div v-if="displayData" class="content">
-    <div v-for="data in displayData" :key="data.color" class="house" v-bind:class="[data.color]">
+  <div v-if="displayActualData" class="content">
+    <div v-for="data in displayActualData" :key="data.color" class="house" v-bind:class="[data.color]" @click="addPointToColor(data.color)">
       <div class="points" v-bind:style="{ height: data.relativePercentage + '%' }">
       </div>
       <div class="name">
@@ -218,6 +145,7 @@ loading = false;
   padding: 0;
   margin: 0;
   border: none;
+  z-index: 100;
 }
 
 .loading.hide {

@@ -1,35 +1,79 @@
 import * as trpc from '@trpc/server';
 import { z } from 'zod';
+import { COLORS, REFRESH_INTERVAL } from './constants';
+import { addPoints, getPoints, Points } from './data';
 
-type User = {
-  id: string;
-  name: string;
-  bio?: string;
-};
+import { Subject } from 'rxjs';
 
-const users: Record<string, User> = {};
+let dataChanged = false;
+const dataChangedEvent = new Subject<Points []>();
 
 export const appRouter = trpc
   .router()
-  .query('getUserById', {
-    input: z.string(),
-    async resolve({ input }) {
-      return users[input]; // input type is string
+  .subscription('onPointsChanged', {
+    resolve() {
+      return new trpc.Subscription<Points[]>((emit) => {
+        const onPointsIncrease = (data: Points[]) => {
+          emit.data(data);
+        };
+
+        const sub = dataChangedEvent.subscribe((data: Points[]) => {
+          onPointsIncrease(data);
+        });
+
+        return () => {
+          sub.unsubscribe();
+        };
+      });
     },
   })
-  .mutation('createUser', {
-    // validate input with Zod
+  .query('getPoints', {
+    async resolve() {
+      try {
+        return await getPoints();
+      } catch (e: any) {
+        console.error(e);
+        process.exitCode = 1;
+        throw new Error('Internal server error');
+      }
+    },
+  })
+  .mutation('addPoints', {
     input: z.object({
-      name: z.string().min(3),
-      bio: z.string().max(142).optional(),
+      color: z.string().nonempty().max(20),
+      number: z.number().min(-1000).max(1000).int(),
+      date: z.date().optional(),
+      owner: z.string().nonempty().max(100).optional(),
+      reason: z.string().nonempty().max(1000).optional(),
     }),
     async resolve({ input }) {
-      const id = Date.now().toString();
-      const user: User = { id, ...input };
-      users[user.id] = user;
-      return user;
+      if (!Object.keys(COLORS).includes(input.color)) {
+        throw new Error('Color does not exist');
+      } else {
+        try {
+          const points = await addPoints(input.color, input.number, input.date, input.owner, input.reason);
+          dataChanged = true;
+          return points;
+        } catch (e: any) {
+          console.error(e);
+          process.exitCode = 1;
+          throw new Error('Internal server error');
+        }
+      }
     },
   });
 
-// export type definition of API
+setInterval(async () => {
+  try {
+    if (dataChanged) {
+      dataChanged = false;
+      dataChangedEvent.next(await getPoints());
+    }
+  } catch (e: any) {
+    console.error(e);
+    process.exitCode = 1;
+    throw new Error('Internal server error');
+  }
+}, REFRESH_INTERVAL);
+
 export type AppRouter = typeof appRouter;
