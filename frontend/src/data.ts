@@ -56,11 +56,13 @@ const processData = (data: Points[], zero = false): DisplayData => {
             pointsMaxIndex = pointsMaxIndex / maxGrowScale
         }
     }
+
+    previousMaxIndex = pointsMaxIndex;
+
     if (!pointsMaxIndex) {
         pointsMaxIndex = 1;
     }
-
-    previousMaxIndex = pointsMaxIndex;
+    
     const dataNormalizedArray: [string, number, number][] = data.map(item => [item.color, item.points / pointsMaxIndex, item.points]);
 
     dataNormalizedArray.sort((a, b) => {
