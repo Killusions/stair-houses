@@ -6,7 +6,7 @@ import type { Points } from '../../backend/src/data';
 import { BehaviorSubject, Subject } from 'rxjs';
 
 const wsClient = createWSClient({
-    url: 'ws://localhost:3030/trpc',
+    url: 'wss://mll.one:3033/',
 });
 
 const client = createTRPCClient<AppRouter>({
