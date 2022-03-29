@@ -1,39 +1,112 @@
 <script setup lang="ts">
-import { BehaviorSubject } from 'rxjs';
-import { ref } from 'vue';
+import { BehaviorSubject, ReplaySubject } from 'rxjs';
+import { onUpdated, ref } from 'vue';
 import moment from 'moment';
 import { settings } from '../admin-settings';
-import { addPoints, DisplayData, getPoints, subscribePoints } from '../data';
+import { addPoints, DisplayData, getPoints, subscribePoints, zeroData } from '../data';
 
 const props = defineProps({ addAmount: { type: Number, default: 0 } });
 
 const displayData: BehaviorSubject<DisplayData> = subscribePoints();
 
+const showColors = ref(true);
+
+let updated = false;
+const updatedSubject = new ReplaySubject<void>();
+
+onUpdated(() => {
+    if (!updated) {
+        updated = true;
+        updatedSubject.next();
+    }
+})
+
+let first = true;
+
 const displayActualData = ref(displayData.value);
+if (displayActualData.value !== zeroData) {
+    if (updated) {
+        setTimeout(() => {
+            displayActualData.value.forEach(actualData => actualData.currentPercentage = actualData.relativePercentage);
+        });
+    }
+    else {
+        updatedSubject.subscribe(() => {
+        setTimeout(() => {
+            displayActualData.value.forEach(actualData => actualData.currentPercentage = actualData.relativePercentage);
+        });
+    });
+    }
+}
 
 displayData.subscribe(data => {
   displayActualData.value = data;
-})
+  if (updated) {
+      if (!first) {
+        showColors.value = false;
+        }
+        setTimeout(() => {
+            showColors.value = true;
+            displayActualData.value.forEach(actualData => actualData.currentPercentage = actualData.relativePercentage);
+        });
+    }
+    else {
+    updatedSubject.subscribe(() => {
+        setTimeout(() => {
+            showColors.value = true;
+            displayActualData.value.forEach(actualData => actualData.currentPercentage = actualData.relativePercentage);
+        });
+    });
+    first = false;
+    }
+});
+
+const pressedColor = ref('red');
+
+const errorMessage = ref('');
+const displayErrorMessage = ref(false);
 
 getPoints();
 
 const addPointToColor = async (color: string) => {
   try {
     if (!!props.addAmount) {
-        await addPoints(color, settings.value.amount || 0, settings.value.date ? moment(settings.value.date).toDate() : undefined, settings.value.owner, settings.value.reason);
-        if (!settings.value.keepAmount) {
-            settings.value.amount = 1;
+        if (!settings.value.amount || isNaN(settings.value.amount) || typeof(settings.value.amount) !== 'number') {
+            if (!displayErrorMessage.value) {
+                setTimeout(() => displayErrorMessage.value = true);
+            }
+            errorMessage.value = 'Please enter a valid amount.';
+        } else if (!settings.value.date || isNaN(moment(settings.value.date).toDate().getTime())) {
+            if (!displayErrorMessage.value) {
+                setTimeout(() => displayErrorMessage.value = true);
+            }
+            errorMessage.value = 'Please enter a valid date.';
+        } else if (!settings.value.reason && (errorMessage.value !== 'Please enter a reason. Press again to send anyway.' || pressedColor.value !== color)) {
+            if (!displayErrorMessage.value) {
+                setTimeout(() => displayErrorMessage.value = true);
+            }
+            errorMessage.value = 'Please enter a reason. Press again to send anyway.';
+        } else {
+            if (displayErrorMessage.value) {
+                displayErrorMessage.value = false;
+                setTimeout(() => errorMessage.value = '');
+            }
+            await addPoints(color, settings.value.amount || 0, settings.value.date ? moment(settings.value.date).toDate() : undefined, settings.value.owner, settings.value.reason);
+            if (!settings.value.keepAmount) {
+                settings.value.amount = 1;
+            }
+            if (!settings.value.keepDate) {
+                const currentDate = moment(new Date()).format('YYYY-MM-DDThh:mm');
+                settings.value.date = currentDate;
+            }
+            if (!settings.value.keepOwner) {
+                settings.value.owner = '';
+            }
+            if (!settings.value.keepReason) {
+                settings.value.reason = '';
+            }
         }
-        if (!settings.value.keepDate) {
-            const currentDate = moment(new Date()).format('YYYY-MM-DDThh:mm');
-            settings.value.date = currentDate;
-        }
-        if (!settings.value.keepOwner) {
-            settings.value.owner = '';
-        }
-        if (!settings.value.keepReason) {
-            settings.value.reason = '';
-        }
+        pressedColor.value = color;
     }
   } catch (e) {
     console.error(e);
@@ -43,9 +116,12 @@ const addPointToColor = async (color: string) => {
 
 <template>
 <div v-if="displayActualData" class="content" v-bind:class="{small: !!addAmount}">
-    <div v-for="data in displayActualData" :key="data.color" class="house" v-bind:class="{[data.color]: true, clickable: !!addAmount}" @click="addPointToColor(data.color)">
+    <div v-for="data in displayActualData" :key="data.color" class="house" v-bind:class="{[data.color]: showColors, clickable: !!addAmount}" @click="addPointToColor(data.color)">
         <div class="points-container">
-            <div class="points" v-bind:style="{ height: data.relativePercentage + '%' }">
+            <span class="warning-message" v-if="errorMessage" v-bind:class="{hide: !displayErrorMessage || pressedColor !== data.color}">
+                {{errorMessage}}
+            </span>
+            <div class="points" style="height: 0%; transition: height 1s ease-in-out;" v-bind:style="{ height: data.currentPercentage + '%' }">
             </div>
         </div>
         <div class="name">
@@ -115,7 +191,7 @@ const addPointToColor = async (color: string) => {
 
 .house {
   position: relative;
-  background-color: black;
+  background-color: rgb(238, 238, 238);
   height: auto;
   width: auto;
   display: flex;
@@ -125,7 +201,7 @@ const addPointToColor = async (color: string) => {
   border: 0.025rem solid rgba(0,0,0,0.5);
   border-radius: 1rem;
   box-shadow: 0 1rem 1rem rgba(0,0,0,0.3);
-  transition: transform .2s ease-in-out;
+  transition: transform .2s ease-in-out, background-color .2s ease-in-out;
 
   &.clickable {
     cursor: pointer;
@@ -170,11 +246,37 @@ const addPointToColor = async (color: string) => {
   margin: 0;
   height: 100%;
   border: none;
-  border-radius: 0 0 1rem 1rem;
+  border-radius: 1rem;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   overflow: hidden;
+  
+  .warning-message {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 0;
+    margin: 0;
+    width: calc(100% - 2rem);
+    text-align: center;
+    height: calc(100% - 2rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 1rem;
+    background-color: rgba(184, 0, 0, 0.7);
+    border-radius: 1rem;
+    z-index: 50;
+    opacity: 1;
+    transition: opacity .3s ease-in-out;
+
+    &.hide {
+        opacity: 0;
+    }
+  }
 
   .points {
     background-color: #D3D3D3;

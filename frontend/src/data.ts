@@ -19,7 +19,7 @@ const client = createTRPCClient<AppRouter>({
 
 let points: Points[] = Object.keys(COLORS).map((item) => ({ color: item as keyof typeof COLORS, points: 0, lastChanged: new Date(0) }));
 
-export type DisplayData = { color: string, colorString: string, points: number, relativePercentage: number, badgeString: string, badgeClass?: string }[];
+export type DisplayData = { color: string, colorString: string, points: number, relativePercentage: number, currentPercentage: number, badgeString: string, badgeClass?: string }[];
 
 const placesStrings = [
     '1st',
@@ -45,7 +45,7 @@ export const hasSessionId = () => {
     return !!sessionId;
 };
 
-const processData = (data: Points[]): DisplayData => {
+const processData = (data: Points[], zero = false): DisplayData => {
     const highestPoints = Math.max(...data.map(item => item.points));
 
     let pointsMaxIndex = scale * highestPoints;
@@ -56,27 +56,34 @@ const processData = (data: Points[]): DisplayData => {
             pointsMaxIndex = pointsMaxIndex / maxGrowScale
         }
     }
+    if (!pointsMaxIndex) {
+        pointsMaxIndex = 1;
+    }
+
     previousMaxIndex = pointsMaxIndex;
     const dataNormalizedArray: [string, number, number][] = data.map(item => [item.color, item.points / pointsMaxIndex, item.points]);
 
     dataNormalizedArray.sort((a, b) => {
-        if (a[1] < b[1]) {
+        if (a[2] < b[2]) {
             return 1;
         }
-        if (a[1] > b[1]) {
+        if (a[2] > b[2]) {
             return -1;
         }
         const previousRandom = randomOrder[a[0] + '-' + b[0]];
         if (previousRandom) {
             return 0;
+        }
+        const previousReverseRandom = randomOrder[b[0] + '-' + a[0]];
+        if (previousReverseRandom) {
+            return 0;
+        }
+        const random = Math.random();
+        randomOrder[a[0] + '-' + b[0]] = random;
+        if (random < 0.5) {
+            return 0;
         } else {
-            const random = Math.random();
-            randomOrder[a[0] + '-' + b[0]] = random;
-            if (random < 0.5) {
-                return 1;
-            } else {
-                return -1;
-            }
+            return -1;
         }
     });
 
@@ -107,13 +114,14 @@ const processData = (data: Points[]): DisplayData => {
         } else if (lastString && lastString === previousPlaceString) {
             badgeClass = 'last';
         }
-        return { color: item[0], colorString: item[0].charAt(0).toUpperCase() + item[0].slice(1), points: item[2], relativePercentage: item[1] * 100, badgeString, badgeClass };
+        const returnObject = { color: item[0], colorString: item[0].charAt(0).toUpperCase() + item[0].slice(1), points: item[2], relativePercentage: item[1] * 100, currentPercentage: zero ? 0 : dataSubject.value.find(prevItem => prevItem.color === item[0])?.currentPercentage ?? 0, badgeString, badgeClass };
+        return returnObject;
     });
 
     return displayData;
 }
 
-export const zeroData = processData(points);
+export const zeroData = processData(points, true);
 
 const dataSubject = new BehaviorSubject(zeroData);
 

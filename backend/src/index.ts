@@ -25,7 +25,7 @@ server.register(ws);
 
 server.register(fp(fastifyTRPCPlugin), {
   useWSS: true,
-  prefix: '/trpc',
+  prefix: '/',
   trpcOptions: { router: appRouter, createContext },
 });
 

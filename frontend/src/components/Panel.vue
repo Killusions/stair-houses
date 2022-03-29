@@ -7,7 +7,7 @@ import { settings } from '../admin-settings';
 <div class="panel">
     <div class="amount-container input-container">
         <label for="amount">Amount</label>
-        <input type="number" id="amount" name="amount" placeholder="10 / -3" v-model="settings.amount">
+        <input type="number" id="amount" name="amount" placeholder="10 / -3" v-model="settings.amount" v-bind:class="{warning: !settings.amount}">
         <div class="keep-container">
             <input type="checkbox" id="keepAmount" name="keepAmount" v-model="settings.keepAmount">
             <label for="keepAmount">Keep</label>
@@ -16,7 +16,7 @@ import { settings } from '../admin-settings';
     <div class="date-container input-container">
         <label for="date">Date</label>
         <div class="date-inner-container">
-            <input type="datetime-local" id="date" name="date" placeholder="Date" v-model="settings.date">
+            <input type="datetime-local" id="date" name="date" placeholder="Date" v-model="settings.date" v-bind:class="{warning: !settings.date}">
         </div>
         <div class="keep-container">
             <input type="checkbox" id="keepDate" name="keepDate" v-model="settings.keepDate">
@@ -33,7 +33,7 @@ import { settings } from '../admin-settings';
     </div>
     <div class="reason-container input-container">
         <label for="reason">Reason</label>
-        <input type="text" id="reason" name="reason" maxlength="1000" placeholder="Occasion (optional)" v-model="settings.reason">
+        <input type="text" id="reason" name="reason" maxlength="1000" placeholder="Occasion" v-model="settings.reason" v-bind:class="{warning: !settings.reason}">
         <div class="keep-container">
             <input type="checkbox" id="keepReason" name="keepReason" v-model="settings.keepReason">
             <label for="keepReason">Keep</label>
@@ -85,6 +85,10 @@ import { settings } from '../admin-settings';
             border-radius: 2vh;
             box-shadow: 0 0.125rem 0.125rem rgba(0,0,0,0.3);
             font-family: Arial, Helvetica, sans-serif;
+
+            &.warning {
+                border: solid 0.3vh rgb(194, 0, 0);
+            }
 
             &#date {
                 margin: 0;
@@ -154,6 +158,10 @@ import { settings } from '../admin-settings';
             margin-top: 1.5vw;
             border: solid 0.2vw rgb(179, 179, 179);
             border-radius: 2vw;
+
+            &.warning {
+                border: solid 0.3vw rgb(194, 0, 0);
+            }
 
              &#date {
                 margin: 0;
