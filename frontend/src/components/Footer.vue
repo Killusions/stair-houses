@@ -1,8 +1,8 @@
 <template>
 <div class="footer">
-<div class="subtitle footer-item">Organised by STAIR</div>
+<a href="https://stair.ch/" class="subtitle footer-item">Organised by STAIR</a>
 <router-link v-if="$router.currentRoute.value.path !== '/admin'" to="/admin" class="admin-link footer-item">Admin-Panel</router-link>
-<div class="madeby footer-item">Webdesign by Linus Schlumberger</div>
+<a href="https://linus.clckm.co/" class="madeby footer-item">Webdesign by Linus</a>
 </div>
 </template>
 
@@ -17,6 +17,11 @@
 
 .footer-item {
   padding: 0.5% 1rem;
+  font-weight: bold;
+  font-size: 2vh;
+  line-height: 3vh;
+  color: unset;
+  text-decoration: none;
 }
 
 .subtitle,
@@ -24,19 +29,11 @@
   flex: 1;
 }
 
-.footer-item {
-  font-weight: bold;
-  font-size: 2vh;
-  line-height: 3vh;
-}
-
 .subtitle {
   text-align: left;
 }
 
 .admin-link {
-  color: unset;
-  text-decoration: none;
   text-align: center;
 }
 
@@ -50,7 +47,8 @@
     height: 3vw;
   }
 
-  .subtitle {
+  .footer-item {
+    padding: 0.5% 1rem;
     font-weight: bold;
     font-size: 2vw;
     line-height: 3vw;

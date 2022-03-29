@@ -196,8 +196,6 @@ export const ensureNoDBConnection = (forGood = false) => {
 export const getPoints = async () => {
     await ensureDBConnection();
     pointsCollection = pointsCollection as Collection<Points>;
-    pointEventsCollection = pointEventsCollection as Collection<PointEvent>;
-    settingsCollection = settingsCollection as Collection<Setting>;
     
     return await pointsCollection.find( {} ).toArray() as Points[];
 }
@@ -206,14 +204,13 @@ export const addPoints = async (color: string, number: number, date?: Date, owne
     await ensureDBConnection();
     pointsCollection = pointsCollection as Collection<Points>;
     pointEventsCollection = pointEventsCollection as Collection<PointEvent>;
-    settingsCollection = settingsCollection as Collection<Setting>;
-
-    console.log(date, owner, reason);
 
     await pointsCollection.updateOne( { color: color as keyof typeof COLORS }, {
         $inc: { points: number },
         $currentDate: { lastChanged: true }
     });
+
+    await pointEventsCollection.insertOne( { color: color as keyof typeof COLORS, pointsDiff: number, date: date ?? new Date(), addedDate: new Date(), addedBy: 'Web', owner, reason});
 
     return await getPoints();
 }

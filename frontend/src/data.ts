@@ -62,7 +62,6 @@ const processData = (data: Points[]): DisplayData => {
         }
         const previousRandom = randomOrder[a[0] + '-' + b[0]];
         if (previousRandom) {
-            console.log('previous random');
             return 0;
         } else {
             const random = Math.random();
@@ -135,9 +134,9 @@ export const getPoints = async () => {
     }
 };
 
-export const addPoints = async (color: string, number: number) => {
+export const addPoints = async (color: string, number: number, date?: Date, owner?: string, reason?: string) => {
     try {
-        const data = await client.mutation('addPoints', { color, number });
+        const data = await client.mutation('addPoints', { color, number, date: date ? date.getTime() : undefined, owner: owner || undefined, reason: reason || undefined });
         if (isDataNewer(data)) {
             points = data;
             const displayData = processData(points);

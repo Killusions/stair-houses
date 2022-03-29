@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { BehaviorSubject } from 'rxjs';
 import { ref } from 'vue';
+import moment from 'moment';
+import { settings } from '../admin-settings';
 import { addPoints, DisplayData, getPoints, subscribePoints } from '../data';
 
 const props = defineProps({ addAmount: { type: Number, default: 0 } });
@@ -18,8 +20,20 @@ getPoints();
 const addPointToColor = async (color: string) => {
   try {
     if (!!props.addAmount) {
-        console.log('add to ' + color);
-        await addPoints(color, 1);
+        await addPoints(color, settings.value.amount, moment(settings.value.date).toDate(), settings.value.owner, settings.value.reason);
+        if (!settings.value.keepAmount) {
+            settings.value.amount = 1;
+        }
+        if (!settings.value.keepDate) {
+            const currentDate = moment(new Date()).format('YYYY-MM-DDThh:mm');
+            settings.value.date = currentDate;
+        }
+        if (!settings.value.keepOwner) {
+            settings.value.owner = '';
+        }
+        if (!settings.value.keepReason) {
+            settings.value.reason = '';
+        }
     }
   } catch (e) {
     console.error(e);
@@ -28,7 +42,7 @@ const addPointToColor = async (color: string) => {
 </script>
 
 <template>
-<div v-if="displayActualData" class="content">
+<div v-if="displayActualData" class="content" v-bind:class="{small: !!addAmount}">
     <div v-for="data in displayActualData" :key="data.color" class="house" v-bind:class="{[data.color]: true, clickable: !!addAmount}" @click="addPointToColor(data.color)">
         <div class="points" v-bind:style="{ height: data.relativePercentage + '%' }">
         </div>
@@ -57,11 +71,19 @@ const addPointToColor = async (color: string) => {
   padding: 0.5rem;
   margin: 0;
   border: none;
+
+  &.small {
+    height: calc(70% - 1rem);
+  }
 }
 
 @media (max-aspect-ratio: 1/1) {
   .content {
     height: calc(100% - 15vw - 1rem);
+
+    &.small {
+        height: calc(100% - 30vw - 1rem);
+    }
   }
 }
 
@@ -105,11 +127,11 @@ const addPointToColor = async (color: string) => {
 
   &.clickable {
     cursor: pointer;
+  }
 
-    &:hover {
-      color: #e6e6e6;
-      transform: scale(1.03);
-    }
+  &:hover {
+    color: #e6e6e6;
+    transform: scale(1.03);
   }
 }
 

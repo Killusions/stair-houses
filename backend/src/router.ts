@@ -42,7 +42,7 @@ export const appRouter = trpc
     input: z.object({
       color: z.string().nonempty().max(20),
       number: z.number().min(-1000).max(1000).int(),
-      date: z.date().optional(),
+      date: z.number().nonnegative().optional(),
       owner: z.string().nonempty().max(100).optional(),
       reason: z.string().nonempty().max(1000).optional(),
     }),
@@ -51,7 +51,11 @@ export const appRouter = trpc
         throw new Error('Color does not exist');
       } else {
         try {
-          const points = await addPoints(input.color, input.number, input.date, input.owner, input.reason);
+          let date = input.date ? new Date(input.date) : undefined;
+          if (date && isNaN(date.getTime())) {
+            date = undefined;
+          }
+          const points = await addPoints(input.color, input.number, date, input.owner, input.reason);
           dataChanged = true;
           return points;
         } catch (e: any) {
