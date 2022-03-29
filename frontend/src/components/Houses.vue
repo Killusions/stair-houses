@@ -20,7 +20,7 @@ getPoints();
 const addPointToColor = async (color: string) => {
   try {
     if (!!props.addAmount) {
-        await addPoints(color, settings.value.amount, moment(settings.value.date).toDate(), settings.value.owner, settings.value.reason);
+        await addPoints(color, settings.value.amount || 0, settings.value.date ? moment(settings.value.date).toDate() : undefined, settings.value.owner, settings.value.reason);
         if (!settings.value.keepAmount) {
             settings.value.amount = 1;
         }
@@ -44,7 +44,9 @@ const addPointToColor = async (color: string) => {
 <template>
 <div v-if="displayActualData" class="content" v-bind:class="{small: !!addAmount}">
     <div v-for="data in displayActualData" :key="data.color" class="house" v-bind:class="{[data.color]: true, clickable: !!addAmount}" @click="addPointToColor(data.color)">
-        <div class="points" v-bind:style="{ height: data.relativePercentage + '%' }">
+        <div class="points-container">
+            <div class="points" v-bind:style="{ height: data.relativePercentage + '%' }">
+            </div>
         </div>
         <div class="name">
         {{data.colorString}}
@@ -82,7 +84,7 @@ const addPointToColor = async (color: string) => {
     height: calc(100% - 15vw - 1rem);
 
     &.small {
-        height: calc(100% - 30vw - 1rem);
+        height: calc(100% - 28vw - 1rem);
     }
   }
 }
@@ -120,7 +122,7 @@ const addPointToColor = async (color: string) => {
   flex-direction: column;
   justify-content: center;
   margin: 0.5rem;
-  border: 0.025rem solid rgba(0,0,0,0.25);
+  border: 0.025rem solid rgba(0,0,0,0.5);
   border-radius: 1rem;
   box-shadow: 0 1rem 1rem rgba(0,0,0,0.3);
   transition: transform .2s ease-in-out;
@@ -159,18 +161,28 @@ const addPointToColor = async (color: string) => {
   background-color: #F6AA00;
 }
 
-.points {
+.points-container {
   position: absolute;
-  background-color: #D3D3D3;
-  opacity: 0.35;
-  height: 0;
   left: 0;
   right: 0;
   bottom: 0;
   padding: 0;
   margin: 0;
+  height: 100%;
   border: none;
   border-radius: 0 0 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+
+  .points {
+    background-color: #D3D3D3;
+    opacity: 0.35;
+    padding: 0;
+    margin: 0;
+    border: none;
+  }
 }
 
 .name, .score {

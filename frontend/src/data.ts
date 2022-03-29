@@ -3,7 +3,7 @@ import { createWSClient, wsLink } from '@trpc/client/links/wsLink';
 import { createTRPCClient } from '@trpc/client';
 import { COLORS } from './constants';
 import type { Points } from '../../backend/src/data';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 
 const wsClient = createWSClient({
     url: 'ws://localhost:3030/trpc',
@@ -38,6 +38,12 @@ const maxGrowScale = 1.5;
 let previousMaxIndex = 0;
 
 const randomOrder: { [key: string]: number } = {};
+
+let sessionId = localStorage.getItem('session') ?? '';
+
+export const hasSessionId = () => {
+    return !!sessionId;
+};
 
 const processData = (data: Points[]): DisplayData => {
     const highestPoints = Math.max(...data.map(item => item.points));
@@ -111,6 +117,10 @@ export const zeroData = processData(points);
 
 const dataSubject = new BehaviorSubject(zeroData);
 
+export const authFailure = new Subject<void>();
+
+export const inLogin = new Subject<boolean>();
+
 const getLatestTimestamp = (data: Points[]) => {
     return Math.max(...data.map(item => (new Date(item.lastChanged)).getTime()));
 }
@@ -136,16 +146,26 @@ export const getPoints = async () => {
 
 export const addPoints = async (color: string, number: number, date?: Date, owner?: string, reason?: string) => {
     try {
-        const data = await client.mutation('addPoints', { color, number, date: date ? date.getTime() : undefined, owner: owner || undefined, reason: reason || undefined });
+        if (!sessionId) {
+            authFailure.next();
+            throw new Error('no sessionId');
+        }
+        const data = await client.mutation('addPoints', { color, number, sessionId: sessionId, date: date ? date.getTime() : undefined, owner: owner || undefined, reason: reason || undefined });
         if (isDataNewer(data)) {
             points = data;
             const displayData = processData(points);
             dataSubject.next(displayData);
         }
         return dataSubject.value;
-    } catch (e) {
-        console.error(e);
-        throw e;
+    } catch (e: any) {
+        if (e.message === 'Incorrect sessionId') {
+            authFailure.next();
+            throw e;
+        } else {
+            console.error(e);
+            throw e;
+        }
+        
     }
 }
 
@@ -170,4 +190,17 @@ export const subscribePoints = () => {
         }
     })();
     return dataSubject;
+};
+
+export const logIn = async (password: string) => {
+    sessionId = await client.mutation('login', { password });
+    if (sessionId) {
+        localStorage.setItem('session', sessionId);
+    }
+    return !!sessionId;
+};
+
+export const logOut = () => {
+    sessionId = '';
+    localStorage.setItem('session', '');
 };

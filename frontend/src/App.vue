@@ -10,11 +10,17 @@ subscribePoints().subscribe(data => {
   }
 });
 
+subscribePoints().subscribe(data => {
+  if (data !== zeroData) {
+    loading.value = false;
+  }
+});
+
 let loading = ref(true);
 </script>
 
 <template>
-<div class="loading" v-bind:class="{hide: !loading}">
+<div class="loading" v-bind:class="{hide: !loading || $router.currentRoute.value.path === '/login'}">
   Loading scores...
 </div>
 <div class="container">

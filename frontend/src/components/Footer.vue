@@ -1,7 +1,12 @@
+<script setup lang="ts">
+import { logOut } from '../data';
+</script>
+
 <template>
 <div class="footer">
 <a href="https://stair.ch/" class="subtitle footer-item">Organised by STAIR</a>
-<router-link v-if="$router.currentRoute.value.path !== '/admin'" to="/admin" class="admin-link footer-item">Admin-Panel</router-link>
+<router-link v-if="$router.currentRoute.value.path !== '/admin' && $router.currentRoute.value.path !== '/login'" to="/admin" class="admin-link footer-item">Admin-Panel</router-link>
+<router-link v-if="$router.currentRoute.value.path === '/admin'" @click="logOut()" to="/" class="admin-link footer-item">Log out</router-link>
 <a href="https://linus.clckm.co/" class="madeby footer-item">Webdesign by Linus</a>
 </div>
 </template>

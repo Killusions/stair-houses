@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@trpc/server": "^9.20.3",
+    "argon2": "^0.28.5",
     "dotenv": "^16.0.0",
     "fastify": "^3.27.4",
     "fastify-cors": "^6.0.3",

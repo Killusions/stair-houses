@@ -1,5 +1,6 @@
 import { Collection, Db, MongoClient } from 'mongodb';
 import { COLORS } from './constants';
+import { hash, verify } from 'argon2';
 
 const rawDomain = process.env.STAIR_HOUSES_DATABASE_DOMAIN;
 const domain = rawDomain ? encodeURIComponent(rawDomain) : 'localhost';
@@ -84,11 +85,11 @@ let pointsCollection: Collection<Points> | undefined = undefined;
 let pointEventsCollection: Collection<PointEvent> | undefined = undefined;
 let settingsCollection: Collection<Setting> | undefined = undefined;
 
-const makeId = (length: number) => {
-    var result           = '';
-    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    var charactersLength = characters.length;
-    for ( var i = 0; i < length; i++ ) {
+export const makeId = (length: number) => {
+    let result           = '';
+    const characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+    for ( let i = 0; i < length; i++ ) {
       result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }
     return result;
@@ -128,13 +129,19 @@ export const ensureDBConnection = () => {
             }
             pointEventsCollection = db.collection<PointEvent>(pointEventsCollectionName);
             settingsCollection = db.collection<Setting>(settingsCollectionName);
-            const passwordObject = await settingsCollection.findOne({ name: 'password', type: 'string' }) as StringSetting;
-            let password: string;
+
+            const passwordObject = await settingsCollection.findOne({ key: 'password', type: 'string' }) as StringSetting;
+            let password: string | undefined;
             if (passwordObject) {
                 password = passwordObject.value;
             } else {
-                password = process.env.STAIR_HOUSES_DEFAULT_PASSWORD ?? makeId(10);
-                await settingsCollection.insertOne({ key: 'password', value: password, type: 'string' });
+                password = process.env.STAIR_HOUSES_DEFAULT_PASSWORD;
+                if (!password) {
+                    password = makeId(10);
+                    console.log('password: ' + password);
+                }
+                const passwordHashed = await hash(password);
+                await settingsCollection.insertOne({ key: 'password', value: passwordHashed, type: 'string' });
             }
             Promise.resolve().then(() => {
                 connectingWaitPromises.forEach(promiseFunc => promiseFunc());
@@ -191,6 +198,17 @@ export const ensureNoDBConnection = (forGood = false) => {
             process.exitCode = 1;
         }
     });
+}
+
+export const verifyPassword = async (password: string) => {
+    await ensureDBConnection();
+    settingsCollection = settingsCollection as Collection<Setting>;
+    
+    const hashedPasswordObject = await settingsCollection.findOne( { key: 'password', 'type': 'string' } ) as StringSetting;
+    if (hashedPasswordObject) {
+        return await verify(hashedPasswordObject.value, password);
+    }
+    return false;
 }
 
 export const getPoints = async () => {

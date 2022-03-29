@@ -1,17 +1,26 @@
 <template>
 <div class="header">
-<router-link to="/"><img src="../assets/stairwhite.png" class="logo"></router-link>
-<div class="title">Houses</div>
+<router-link to="/" class="header-container">
+    <img src="../assets/stairwhite.png" class="logo">
+    <div class="title">Houses</div>
+</router-link>
 </div>
 </template>
 
 <style scoped lang="scss">
 .header {
   display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 12%;
+}
+
+.header-container {
+  display: flex;
   flex-direction: row;
   justify-content: flex-start;
-  align-items: flex-end;
-  height: 12%;
+  color: unset;
+  text-decoration: none;
 }
 
 .logo {
@@ -29,7 +38,6 @@
 
 @media (max-aspect-ratio: 1/1) {
   .header {
-    display: flex;
     height: 12vw;
   }
 
