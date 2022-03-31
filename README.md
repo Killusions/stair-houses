@@ -45,7 +45,7 @@ To set up the project locally follow the following steps.
 To install and run the project you will need the following:
 
 #### General / Shared
-* Git: [install (click here)(https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+* Git: [install (click here)](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 * a recent version of Node.js and npm: 
 [install (click here)](https://nodejs.dev/learn/how-to-install-nodejs), update:
   ```sh
