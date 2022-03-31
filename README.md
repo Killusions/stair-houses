@@ -135,7 +135,7 @@ To install and run the project use the following commands.
    ```
 8. Run the program with Node.js and auto-restart on changes
    ```sh
-   yarn server
+   yarn serve
    ```
    or run it once
    ```sh
