@@ -57,17 +57,17 @@ To install and run the project you will need the following:
   npm install --global yarn
   ```
   
-### Backend
+#### Backend
 * MongoDB: [install (click here)](https://www.mongodb.com/docs/guides/server/install/)
 
-### Frontend
+#### Frontend
 * A (or better multiple) modern browser(s)
 
 ### Installation and running
 
 To install and run the project use the following commands.
 
-### General
+#### General
 1. Clone the repo
    ```sh
    git clone git@github.com:stairch/stair-houses.git
