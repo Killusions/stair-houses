@@ -1,11 +1,11 @@
 import { createApp } from 'vue'
-import { createRouter, createWebHashHistory } from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router'
 import App from './App.vue'
 import Home from './pages/Home.vue'
 import Admin from './pages/Admin.vue'
 import Login from './pages/Login.vue'
 
-import './styles.scss';
+import './styles.scss'
 
 const routes = [
   { path: '/', component: Home },
@@ -18,6 +18,6 @@ const router = createRouter({
   routes,
 })
 
-const app = createApp(App);
-app.use(router);
-app.mount('#app');
+const app = createApp(App)
+app.use(router)
+app.mount('#app')

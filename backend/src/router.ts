@@ -1,14 +1,14 @@
-import * as trpc from '@trpc/server';
-import { z } from 'zod';
-import { COLORS, REFRESH_INTERVAL } from './constants';
-import { addPoints, getPoints, makeId, Points, verifyPassword } from './data';
+import * as trpc from '@trpc/server'
+import { z } from 'zod'
+import { COLORS, REFRESH_INTERVAL } from './constants'
+import { addPoints, getPoints, makeId, Points, verifyPassword } from './data'
 
-import { Subject } from 'rxjs';
+import { Subject } from 'rxjs'
 
-let dataChanged = false;
-const dataChangedEvent = new Subject<Points []>();
+let dataChanged = false
+const dataChangedEvent = new Subject<Points[]>()
 
-const sessions: { [key: string]: { expirationDate: Date, ip: string } } = {};
+const sessions: { [key: string]: { expirationDate: Date; ip: string } } = {}
 
 export const appRouter = trpc
   .router()
@@ -16,27 +16,27 @@ export const appRouter = trpc
     resolve() {
       return new trpc.Subscription<Points[]>((emit) => {
         const onPointsIncrease = (data: Points[]) => {
-          emit.data(data);
-        };
+          emit.data(data)
+        }
 
         const sub = dataChangedEvent.subscribe((data: Points[]) => {
-          onPointsIncrease(data);
-        });
+          onPointsIncrease(data)
+        })
 
         return () => {
-          sub.unsubscribe();
-        };
-      });
+          sub.unsubscribe()
+        }
+      })
     },
   })
   .query('getPoints', {
     async resolve() {
       try {
-        return await getPoints();
-      } catch (e: any) {
-        console.error(e);
-        process.exitCode = 1;
-        throw new Error('Internal server error');
+        return await getPoints()
+      } catch (e: unknown) {
+        console.error(e)
+        process.exitCode = 1
+        throw new Error('Internal server error')
       }
     },
   })
@@ -46,23 +46,29 @@ export const appRouter = trpc
     }),
     async resolve({ input, ctx }) {
       try {
-        const correct = await verifyPassword(input.password);
+        const correct = await verifyPassword(input.password)
         if (correct) {
-          const sessionId = makeId(20);
-          const ip = (ctx as any).req!.connection!.remoteAddress!;
-          sessions[sessionId] = { expirationDate: new Date((new Date()).getTime() + 1000 * 60 * 60 * 24), ip};
-          Object.keys(sessions).forEach(id => {
+          const sessionId = makeId(20)
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-explicit-any
+          const ip = (ctx as any).req!.connection!.remoteAddress!
+          sessions[sessionId] = {
+            expirationDate: new Date(
+              new Date().getTime() + 1000 * 60 * 60 * 24
+            ),
+            ip,
+          }
+          Object.keys(sessions).forEach((id) => {
             if (sessions[id].expirationDate < new Date()) {
-              delete sessions[id];
+              delete sessions[id]
             }
           })
-          return sessionId;
+          return sessionId
         }
-        return '';
-      } catch (e: any) {
-        console.error(e);
-        process.exitCode = 1;
-        throw new Error('Internal server error');
+        return ''
+      } catch (e: unknown) {
+        console.error(e)
+        process.exitCode = 1
+        throw new Error('Internal server error')
       }
     },
   })
@@ -76,43 +82,50 @@ export const appRouter = trpc
       reason: z.string().nonempty().max(1000).optional(),
     }),
     async resolve({ input, ctx }) {
-      const ip = (ctx as any).req!.connection!.remoteAddress!;
-      const session = sessions[input.sessionId];
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-explicit-any
+      const ip = (ctx as any).req!.connection!.remoteAddress!
+      const session = sessions[input.sessionId]
       if (session && session.ip === ip && session.expirationDate > new Date()) {
         if (!Object.keys(COLORS).includes(input.color)) {
-          throw new Error('Color does not exist');
+          throw new Error('Color does not exist')
         } else {
           try {
-            let date = input.date ? new Date(input.date) : undefined;
+            let date = input.date ? new Date(input.date) : undefined
             if (date && isNaN(date.getTime())) {
-              date = undefined;
+              date = undefined
             }
-            const points = await addPoints(input.color, input.number, date, input.owner, input.reason);
-            dataChanged = true;
-            return points;
-          } catch (e: any) {
-            console.error(e);
-            process.exitCode = 1;
-            throw new Error('Internal server error');
+            const points = await addPoints(
+              input.color,
+              input.number,
+              date,
+              input.owner,
+              input.reason
+            )
+            dataChanged = true
+            return points
+          } catch (e: unknown) {
+            console.error(e)
+            process.exitCode = 1
+            throw new Error('Internal server error')
           }
         }
       } else {
-        throw new Error('Incorrect sessionId');
+        throw new Error('Incorrect sessionId')
       }
     },
-  });
+  })
 
 setInterval(async () => {
   try {
     if (dataChanged) {
-      dataChanged = false;
-      dataChangedEvent.next(await getPoints());
+      dataChanged = false
+      dataChangedEvent.next(await getPoints())
     }
-  } catch (e: any) {
-    console.error(e);
-    process.exitCode = 1;
-    throw new Error('Internal server error');
+  } catch (e: unknown) {
+    console.error(e)
+    process.exitCode = 1
+    throw new Error('Internal server error')
   }
-}, REFRESH_INTERVAL);
+}, REFRESH_INTERVAL)
 
-export type AppRouter = typeof appRouter;
+export type AppRouter = typeof appRouter
