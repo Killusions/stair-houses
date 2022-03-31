@@ -10,6 +10,8 @@ It provides a public website to view the scores as well as a password protected 
 
 The project consists of a frontend as well as a backend which the frontend connects with and where the points are stored.
 
+The frontend is deployed [here](https://stair.ch/houses).
+
 
 ### Built With
 
@@ -88,7 +90,7 @@ To install and run the project use the following commands.
    ```sh
    cd frontend
    ```
-5. Install NPM packages at root level for the frontend
+5. Install NPM packages for the frontend
    ```sh
    yarn
    ```
@@ -114,7 +116,7 @@ To install and run the project use the following commands.
    ```sh
    cd backend
    ```
-5. Install NPM packages at root level for the frontend
+5. Install NPM packages for the backend
    ```sh
    yarn
    ```
