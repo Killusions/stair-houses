@@ -163,3 +163,10 @@ Before submitting your Pull Request, check that you have followed conventional c
 3. Commit your Changes (`git commit -m 'feat: add some amazing feature'`)
 4. Push to the Branch (`git push origin feat/add-amazing-feature`)
 5. Open a Pull Request
+
+
+## License
+
+Distributed under the GNU General Public License v3.0. See `LICENSE` for more information.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
