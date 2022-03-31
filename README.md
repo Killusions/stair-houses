@@ -157,7 +157,7 @@ Contributions are what make the open source community such an amazing place to l
 If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
 Don't forget to give the project a star! Thanks again!
 
-**Important**: To keep this project clean and easily readable, we use [contentional commits](https://www.conventionalcommits.org/en/v1.0.0/) and an entire suite of linters.
+**Important**: To keep this project clean and easily readable, we use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) and an entire suite of linters.
 Before submitting your Pull Request, check that you have followed conventional commits and run the format and lint commands mentioned above.
 
 1. Fork the Project
