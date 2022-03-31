@@ -39,10 +39,12 @@ let previousMaxIndex = 0;
 
 const randomOrder: { [key: string]: number } = {};
 
+let sessionExpires = parseInt(localStorage.getItem('sessionExpires') ?? '') ?? 0;
+
 let sessionId = localStorage.getItem('session') ?? '';
 
 export const hasSessionId = () => {
-    return !!sessionId;
+    return !!sessionId && sessionExpires > (new Date()).getTime();
 };
 
 const processData = (data: Points[], zero = false): DisplayData => {
@@ -203,14 +205,18 @@ export const subscribePoints = () => {
 };
 
 export const logIn = async (password: string) => {
-    sessionId = await client.mutation('login', { password });
-    if (sessionId) {
-        localStorage.setItem('session', sessionId);
-    }
-    return !!sessionId;
+  sessionId = await client.mutation('login', { password })
+  sessionExpires = (new Date()).getTime() + 1000 * 60 * 60 * 23.5;
+  if (sessionId) {
+    localStorage.setItem('session', sessionId);
+    localStorage.setItem('sessionExpires', sessionExpires.toString());
+  }
+  return !!sessionId
 };
 
 export const logOut = () => {
-    sessionId = '';
-    localStorage.setItem('session', '');
+  sessionId = '';
+  sessionExpires = 0;
+  localStorage.setItem('session', '');
+  localStorage.setItem('sessionExpires', '');
 };
