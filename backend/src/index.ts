@@ -59,8 +59,8 @@ server.register(fastifyCors, () => (req, callback) => {
 ;(async () => {
   try {
     await server.listen(
-      process.env.STAIR_HOUSES_SSL_PORT ?? 3033,
-      process.env.STAIR_HOUSES_SSL_IP ?? undefined
+      process.env.STAIR_HOUSES_PORT ?? 3033,
+      process.env.STAIR_HOUSES_IP ?? undefined
     )
     console.log('Listening on port 3033')
   } catch (err) {
