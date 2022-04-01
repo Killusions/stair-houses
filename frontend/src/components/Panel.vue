@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { settings } from '../admin-settings'
+  import { settings } from '../settings'
 </script>
 
 <template>

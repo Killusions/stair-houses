@@ -1,8 +1,15 @@
+<script setup lang="ts">
+  import { ranking, secret } from '../settings'
+</script>
+
 <template>
   <div class="header">
     <router-link to="/" class="header-container">
       <img src="../assets/stairwhite.png" class="logo" />
       <div class="title">Houses</div>
+      <button v-if="secret" class="view-toggle" @click="ranking = !ranking">
+        {{ ranking ? 'Ranking' : 'Overview' }}
+      </button>
     </router-link>
   </div>
 </template>
@@ -19,6 +26,7 @@
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
+    align-items: center;
     color: unset;
     text-decoration: none;
   }
@@ -36,6 +44,22 @@
     line-height: 10vh;
   }
 
+  .view-toggle {
+    margin-left: auto;
+    margin-right: 0.75rem;
+    margin-top: 0.35rem;
+    margin-bottom: 0;
+    height: 2.1rem;
+    font-size: 1rem;
+    line-height: 1rem;
+    font-weight: bold;
+    padding: 0.45rem;
+    background-color: #ffffff;
+    border: solid 0.1rem rgb(179, 179, 179);
+    border-radius: 1rem;
+    box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+  }
+
   @media (max-aspect-ratio: 1/1) {
     .header {
       height: 12vw;
@@ -51,6 +75,13 @@
       font-weight: bold;
       font-size: 9vw;
       line-height: 10vw;
+    }
+
+    .view-toggle {
+      height: 1.7rem;
+      font-size: 0.8rem;
+      line-height: 0.8rem;
+      padding: 0.35rem;
     }
   }
 </style>

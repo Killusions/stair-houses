@@ -102,7 +102,8 @@
     min-width: 10vw;
     font-weight: bold;
     padding: 0.35rem;
-    border: solid 0.1rem rgb(179, 179, 179);
+    background-color: #ffffff;
+    border: solid 0.05rem rgb(179, 179, 179);
     border-radius: 1rem;
     box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
   }

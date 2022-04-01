@@ -2,7 +2,7 @@
   import { BehaviorSubject, ReplaySubject } from 'rxjs'
   import { onUpdated, ref } from 'vue'
   import moment from 'moment'
-  import { settings } from '../admin-settings'
+  import { secret, settings } from '../settings'
   import {
     addPoints,
     DisplayData,
@@ -84,6 +84,8 @@
 
   getPoints()
 
+  let secretCounter = 0
+
   const addPointToColor = async (color: string) => {
     try {
       if (!!props.addAmount) {
@@ -144,6 +146,13 @@
           }
         }
         pressedColor.value = color
+      } else {
+        if (color === 'orange') {
+          secretCounter++
+          if (secretCounter >= 10) {
+            secret.value = true
+          }
+        }
       }
     } catch (e) {
       console.error(e)

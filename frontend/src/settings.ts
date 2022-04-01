@@ -1,6 +1,10 @@
 import moment from 'moment'
 import { ref } from 'vue'
 
+export const ranking = ref(false)
+
+export const secret = ref(false)
+
 const currentDate = moment(new Date()).format('YYYY-MM-DDThh:mm')
 
 export const settings = ref({
