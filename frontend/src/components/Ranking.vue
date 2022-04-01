@@ -5,7 +5,7 @@
   import { settings } from '../settings'
   import { addPoints, DisplayData, getPoints, subscribePoints } from '../data'
 
-  const props = defineProps({ addAmount: { type: Number, default: 0 } })
+  const props = defineProps({ allowEdit: { type: Boolean, default: false } })
 
   const displayData: BehaviorSubject<DisplayData> = subscribePoints()
 
@@ -26,7 +26,7 @@
 
   const addPointToColor = async (color: string) => {
     try {
-      if (!!props.addAmount) {
+      if (!!props.allowEdit) {
         if (
           !settings.value.amount ||
           isNaN(settings.value.amount) ||
@@ -92,7 +92,7 @@
 </script>
 
 <template>
-  <div class="ranking" :class="{ small: !!addAmount }">
+  <div class="ranking" :class="{ small: !!allowEdit }">
     <div class="ranking-image"></div>
     <div class="ranking-content">
       <div class="subheader">SCOREBOARD</div>
@@ -101,7 +101,7 @@
           v-for="(data, index) in displayActualData"
           :key="data.color"
           class="house"
-          :class="{ clickable: !!addAmount }"
+          :class="{ clickable: !!allowEdit }"
           @click="addPointToColor(data.color)"
         >
           <span class="index"> {{ index + 1 }}. </span>

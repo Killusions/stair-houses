@@ -11,7 +11,7 @@
     zeroData,
   } from '../data'
 
-  const props = defineProps({ addAmount: { type: Number, default: 0 } })
+  const props = defineProps({ allowEdit: { type: Boolean, default: false } })
 
   const displayData: BehaviorSubject<DisplayData> = subscribePoints()
 
@@ -88,7 +88,7 @@
 
   const addPointToColor = async (color: string) => {
     try {
-      if (!!props.addAmount) {
+      if (!!props.allowEdit) {
         if (
           !settings.value.amount ||
           isNaN(settings.value.amount) ||
@@ -161,12 +161,12 @@
 </script>
 
 <template>
-  <div v-if="displayActualData" class="content" :class="{ small: !!addAmount }">
+  <div v-if="displayActualData" class="content" :class="{ small: !!allowEdit }">
     <div
       v-for="data in displayActualData"
       :key="data.color"
       class="house"
-      :class="{ [data.color]: showColors, clickable: !!addAmount }"
+      :class="{ [data.color]: showColors, clickable: !!allowEdit }"
       @click="addPointToColor(data.color)"
     >
       <div class="points-container">

@@ -5,6 +5,6 @@
 </script>
 
 <template>
-  <Ranking v-if="ranking" :add-amount="0"> </Ranking>
-  <Houses v-else :add-amount="0"> </Houses>
+  <Ranking v-if="ranking" :allow-edit="false"> </Ranking>
+  <Houses v-else :allow-edit="false"> </Houses>
 </template>

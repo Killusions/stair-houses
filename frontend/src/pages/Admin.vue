@@ -19,7 +19,7 @@
 </script>
 
 <template>
-  <Panel> </Panel>
-  <Ranking v-if="ranking" :add-amount="1"> </Ranking>
-  <Houses v-else :add-amount="1"> </Houses>
+  <Panel v-if="!ranking"> </Panel>
+  <Ranking v-if="ranking" :allow-edit="!ranking"> </Ranking>
+  <Houses v-else :allow-edit="!ranking"> </Houses>
 </template>
