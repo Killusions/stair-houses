@@ -7,22 +7,24 @@
     <router-link to="/" class="header-container">
       <img src="../assets/stairwhite.png" class="logo" />
       <div class="title">Houses</div>
-      <button v-if="secret" class="view-toggle" @click="ranking = !ranking">
-        {{ ranking ? 'Ranking' : 'Overview' }}
-      </button>
     </router-link>
+    <button v-if="secret" class="view-toggle" @click="ranking = !ranking">
+      {{ ranking ? 'Ranking' : 'Overview' }}
+    </button>
   </div>
 </template>
 
 <style scoped lang="scss">
   .header {
     display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
     height: 12%;
   }
 
   .header-container {
+    width: min-content;
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
@@ -47,8 +49,8 @@
   .view-toggle {
     margin-left: auto;
     margin-right: 0.75rem;
-    margin-top: 0.35rem;
-    margin-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0.6rem;
     height: 2.1rem;
     font-size: 1rem;
     line-height: 1rem;

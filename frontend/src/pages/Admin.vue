@@ -20,6 +20,6 @@
 
 <template>
   <Panel> </Panel>
-  <Ranking v-if="ranking" :add-amount="0"> </Ranking>
-  <Houses v-else :add-amount="0"> </Houses>
+  <Ranking v-if="ranking" :add-amount="1"> </Ranking>
+  <Houses v-else :add-amount="1"> </Houses>
 </template>

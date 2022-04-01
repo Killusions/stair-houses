@@ -9,12 +9,12 @@
     "lint:ec": "eclint check",
     "lint:ts": "eslint --ext .ts,vue --ignore-path .gitignore .",
     "lint:style": "stylelint src/**/*.{css,scss,vue}",
-    "lint:prettier": "prettier -u -c .",
+    "lint:prettier": "prettier --ignore-path .gitignore -u -c .",
     "lint:all": "yarn lint:ec; yarn lint:ts; yarn lint:style; yarn lint:prettier",
     "format:ec": "eclint fix",
     "format:ts": "eslint --ext .ts,vue --ignore-path .gitignore . --fix",
     "format:style": "stylelint src/**/*.{css,scss,vue} --fix",
-    "format:prettier": "prettier -w -u .",
+    "format:prettier": "prettier --ignore-path .gitignore -w -u .",
     "format:all": "yarn format:ec; yarn format:ts; yarn format:style; yarn format:prettier"
   },
   "devDependencies": {
