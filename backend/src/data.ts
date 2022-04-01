@@ -41,6 +41,15 @@ export interface Points {
   lastChanged: Date
 }
 
+export interface PointsCategory {
+  name: string
+  amount: number
+}
+
+export interface PointsWithStats extends Points {
+  categories: PointsCategory[]
+}
+
 export interface PointEvent {
   color: string
   pointsDiff: number
@@ -253,6 +262,37 @@ export const getPoints = async () => {
   return (await pointsCollection.find({}).toArray()) as Points[]
 }
 
+export const getPointsWithStats = async () => {
+  await ensureDBConnection()
+  pointsCollection = pointsCollection as Collection<Points>
+  pointEventsCollection = pointEventsCollection as Collection<PointEvent>
+
+  const points = (await pointsCollection.find({}).toArray()) as Points[]
+  const events = (await pointEventsCollection
+    .find({})
+    .toArray()) as PointEvent[]
+
+  const pointsWithStats: PointsWithStats[] = points.map((item) => {
+    const pointsCategories: Record<string, number> = {}
+    events
+      .filter((event) => event.color === item.color)
+      .forEach((event) => {
+        if (pointsCategories[event.reason || 'General']) {
+          pointsCategories[event.reason || 'General'] += event.pointsDiff
+        } else {
+          pointsCategories[event.reason || 'General'] = event.pointsDiff
+        }
+      })
+    const categoriesArray: PointsCategory[] = Object.keys(pointsCategories).map(
+      (key) => {
+        return { name: key, amount: pointsCategories[key] }
+      }
+    )
+    return { ...item, categories: categoriesArray }
+  })
+  return pointsWithStats
+}
+
 export const addPoints = async (
   color: string,
   number: number,
@@ -282,5 +322,5 @@ export const addPoints = async (
     reason,
   })
 
-  return await getPoints()
+  return await getPointsWithStats()
 }

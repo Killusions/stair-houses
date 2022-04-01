@@ -1,11 +1,7 @@
 <script setup lang="ts">
   import { BehaviorSubject } from 'rxjs'
   import { ref } from 'vue'
-  import moment from 'moment'
-  import { settings } from '../settings'
-  import { addPoints, DisplayData, getPoints, subscribePoints } from '../data'
-
-  const props = defineProps({ allowEdit: { type: Boolean, default: false } })
+  import { DisplayData, getPoints, subscribePoints } from '../data'
 
   const displayData: BehaviorSubject<DisplayData> = subscribePoints()
 
@@ -17,82 +13,11 @@
     displayActualData.value = data
   })
 
-  const pressedColor = ref('red')
-
-  const errorMessage = ref('')
-  const displayErrorMessage = ref(false)
-
   getPoints()
-
-  const addPointToColor = async (color: string) => {
-    try {
-      if (!!props.allowEdit) {
-        if (
-          !settings.value.amount ||
-          isNaN(settings.value.amount) ||
-          typeof settings.value.amount !== 'number'
-        ) {
-          if (!displayErrorMessage.value) {
-            setTimeout(() => (displayErrorMessage.value = true))
-          }
-          errorMessage.value = 'Please enter a valid amount.'
-        } else if (
-          !settings.value.date ||
-          isNaN(moment(settings.value.date).toDate().getTime())
-        ) {
-          if (!displayErrorMessage.value) {
-            setTimeout(() => (displayErrorMessage.value = true))
-          }
-          errorMessage.value = 'Please enter a valid date.'
-        } else if (
-          !settings.value.reason &&
-          (errorMessage.value !==
-            'Please enter a reason. Press again to send anyway.' ||
-            pressedColor.value !== color)
-        ) {
-          if (!displayErrorMessage.value) {
-            setTimeout(() => (displayErrorMessage.value = true))
-          }
-          errorMessage.value =
-            'Please enter a reason. Press again to send anyway.'
-        } else {
-          if (displayErrorMessage.value) {
-            displayErrorMessage.value = false
-            setTimeout(() => (errorMessage.value = ''))
-          }
-          await addPoints(
-            color,
-            settings.value.amount || 0,
-            settings.value.date
-              ? moment(settings.value.date).toDate()
-              : undefined,
-            settings.value.owner,
-            settings.value.reason
-          )
-          if (!settings.value.keepAmount) {
-            settings.value.amount = 1
-          }
-          if (!settings.value.keepDate) {
-            const currentDate = moment(new Date()).format('YYYY-MM-DDThh:mm')
-            settings.value.date = currentDate
-          }
-          if (!settings.value.keepOwner) {
-            settings.value.owner = ''
-          }
-          if (!settings.value.keepReason) {
-            settings.value.reason = ''
-          }
-        }
-        pressedColor.value = color
-      }
-    } catch (e) {
-      console.error(e)
-    }
-  }
 </script>
 
 <template>
-  <div class="ranking" :class="{ small: !!allowEdit }">
+  <div class="ranking">
     <div class="ranking-image"></div>
     <div class="ranking-content">
       <div class="subheader">SCOREBOARD</div>
@@ -101,22 +26,11 @@
           v-for="(data, index) in displayActualData"
           :key="data.color"
           class="house"
-          :class="{ clickable: !!allowEdit }"
-          @click="addPointToColor(data.color)"
         >
           <span class="index"> {{ index + 1 }}. </span>
-          <div class="name" :class="{ [data.color]: showColors }">
+          <span class="name" :class="{ [data.color]: showColors }">
             {{ (data.colorString + ' House').toUpperCase() }}
-            <span
-              v-if="errorMessage"
-              class="warning-message"
-              :class="{
-                hide: !displayErrorMessage || pressedColor !== data.color,
-              }"
-            >
-              {{ errorMessage }}
-            </span>
-          </div>
+          </span>
           <span class="number">
             {{ data.points }}
           </span>
@@ -138,10 +52,6 @@
     flex-direction: row;
     justify-content: center;
     align-items: flex-start;
-
-    &.small {
-      height: calc(70% - 2rem);
-    }
   }
 
   .ranking-image {
@@ -189,9 +99,6 @@
     margin: 0 5vh;
     font-weight: bold;
     transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
-    &.clickable {
-      cursor: pointer;
-    }
 
     &:hover {
       border-radius: 0.5vh;
@@ -205,10 +112,6 @@
     .ranking {
       height: calc(100% - 15vw - 2rem);
       display: block;
-
-      &.small {
-        height: calc(100% - 28vw - 2rem);
-      }
     }
   }
 

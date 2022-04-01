@@ -196,6 +196,16 @@
           </span>
         </div>
       </div>
+      <div class="categories">
+        <div
+          v-for="category in data.categories"
+          :key="category.name"
+          class="category"
+        >
+          <span class="category-name"> {{ category.name }} </span>
+          <span class="category-number"> {{ category.amount }} </span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -401,5 +411,9 @@
 
   .badge.last {
     background-color: #871010;
+  }
+
+  .categories {
+    display: none;
   }
 </style>

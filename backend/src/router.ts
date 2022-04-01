@@ -1,7 +1,13 @@
 import * as trpc from '@trpc/server'
 import { z } from 'zod'
 import { COLORS, REFRESH_INTERVAL } from './constants'
-import { addPoints, getPoints, makeId, Points, verifyPassword } from './data'
+import {
+  addPoints,
+  getPointsWithStats,
+  makeId,
+  Points,
+  verifyPassword,
+} from './data'
 
 import { Subject } from 'rxjs'
 
@@ -32,7 +38,7 @@ export const appRouter = trpc
   .query('getPoints', {
     async resolve() {
       try {
-        return await getPoints()
+        return await getPointsWithStats()
       } catch (e: unknown) {
         console.error(e)
         process.exitCode = 1
@@ -119,7 +125,7 @@ setInterval(async () => {
   try {
     if (dataChanged) {
       dataChanged = false
-      dataChangedEvent.next(await getPoints())
+      dataChangedEvent.next(await getPointsWithStats())
     }
   } catch (e: unknown) {
     console.error(e)
