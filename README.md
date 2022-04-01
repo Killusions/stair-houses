@@ -216,6 +216,8 @@ These can be set in a `.env.production.local` file in the `frontend` directory s
 ```sh
 STAIR_HOUSES_PORT="3033"
 STAIR_HOUSES_IP="<server IP address, NOT DOMAIN!!!>"
+STAIR_HOUSES_SSL_CERT="<file path to ssl certificate (can be omitted, then http/ws will be used)>"
+STAIR_HOUSES_SSL_KEY="<file path to ssl private key (can be omitted together with the certificate)>"
 STAIR_HOUSES_FRONTEND_HOST="stair.ch"
 STAIR_HOUSES_DEFAULT_PASSWORD="<default password to be set on first connection to database, if not set already, SHOULD BE REMOVED/OMITTED LATER!!!>"
 STAIR_HOUSES_DATABASE_HOST="localhost"
