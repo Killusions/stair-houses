@@ -163,10 +163,14 @@
 <template>
   <div v-if="displayActualData" class="content" :class="{ small: !!allowEdit }">
     <div
-      v-for="data in displayActualData"
+      v-for="(data, index) in displayActualData"
       :key="data.color"
       class="house"
-      :class="{ [data.color]: showColors, clickable: !!allowEdit }"
+      :class="{
+        [data.color]: showColors,
+        clickable: !!allowEdit,
+        ['house-' + (index + 1)]: true,
+      }"
       @click="addPointToColor(data.color)"
     >
       <div class="points-container">
@@ -185,6 +189,20 @@
           :style="{ height: data.currentPercentage + '%' }"
         ></div>
       </div>
+      <div class="categories-wrapper">
+        <div class="categories-inner-wrapper">
+          <div class="categories">
+            <div
+              v-for="category in data.categories"
+              :key="category.name"
+              class="category"
+            >
+              <span class="category-name"> {{ category.name }} </span>
+              <span class="category-number"> {{ category.amount }} </span>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="name">
         {{ data.colorString }}
         <div class="score">
@@ -194,16 +212,6 @@
           <span class="badge" :class="[data.badgeClass]">
             {{ data.badgeString }}
           </span>
-        </div>
-      </div>
-      <div class="categories">
-        <div
-          v-for="category in data.categories"
-          :key="category.name"
-          class="category"
-        >
-          <span class="category-name"> {{ category.name }} </span>
-          <span class="category-number"> {{ category.amount }} </span>
         </div>
       </div>
     </div>
@@ -221,8 +229,87 @@
     margin: 0;
     border: none;
 
+    .categories-wrapper {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      width: 100%;
+      height: 0;
+
+      .categories-inner-wrapper {
+        position: absolute;
+        left: 10%;
+        right: 10%;
+        bottom: 0.05rem;
+        max-height: 6rem;
+        overflow-y: visible;
+        display: none;
+      }
+      .categories {
+        padding: 0.25rem;
+        background-color: rgba(32, 32, 32, 0.95);
+        border: 0.025rem solid rgba(0, 0, 0, 0.5);
+        border-radius: 1rem;
+        box-shadow: 0 1rem 1rem rgba(0, 0, 0, 0.3);
+        transition: opacity 0.2s ease-in-out;
+        opacity: 0;
+        font-size: 1rem;
+        line-height: 1rem;
+        .category {
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          margin: 0.35rem;
+        }
+      }
+    }
+
     &.small {
       height: calc(70% - 1rem);
+    }
+  }
+
+  .house {
+    position: relative;
+    background-color: rgb(238, 238, 238);
+    height: auto;
+    width: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin: 0.5rem;
+    border: 0.025rem solid rgba(0, 0, 0, 0.5);
+    border-radius: 1rem;
+    box-shadow: 0 1rem 1rem rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    overflow: visible;
+
+    &.house-1,
+    &.house-2,
+    &.house-3 {
+      .categories-wrapper .categories-inner-wrapper {
+        max-height: 5.5rem;
+      }
+    }
+
+    &.clickable {
+      cursor: pointer;
+    }
+
+    &:hover,
+    &:active,
+    &:focus {
+      color: #e6e6e6;
+      transform: scale(1.03);
+
+      .categories-wrapper .categories-inner-wrapper {
+        display: block;
+
+        .categories {
+          opacity: 1;
+        }
+      }
     }
   }
 
@@ -241,6 +328,12 @@
       grid-template-rows: 1fr;
       grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
       grid-template-areas: 'a b c d e f';
+
+      .house {
+        .categories-wrapper .categories-inner-wrapper {
+          max-height: 2.25rem;
+        }
+      }
     }
   }
 
@@ -249,6 +342,19 @@
       grid-template-rows: 1fr 1fr 1fr;
       grid-template-columns: 1fr 1fr;
       grid-template-areas: 'a b' 'c d' 'e f';
+
+      .house {
+        .categories-wrapper .categories-inner-wrapper {
+          max-height: 6rem;
+        }
+
+        &.house-1,
+        &.house-2 {
+          .categories-wrapper .categories-inner-wrapper {
+            max-height: 4rem;
+          }
+        }
+      }
     }
   }
 
@@ -257,30 +363,17 @@
       grid-template-rows: 1fr 1fr 1fr 1fr 1fr 1fr;
       grid-template-columns: 1fr;
       grid-template-areas: 'a' 'b' 'c' 'd' 'e' 'f';
-    }
-  }
 
-  .house {
-    position: relative;
-    background-color: rgb(238, 238, 238);
-    height: auto;
-    width: auto;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    margin: 0.5rem;
-    border: 0.025rem solid rgba(0, 0, 0, 0.5);
-    border-radius: 1rem;
-    box-shadow: 0 1rem 1rem rgba(0, 0, 0, 0.3);
-    transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
-
-    &.clickable {
-      cursor: pointer;
-    }
-
-    &:hover {
-      color: #e6e6e6;
-      transform: scale(1.03);
+      .house {
+        .categories-wrapper .categories-inner-wrapper {
+          max-height: 6rem;
+        }
+        &:first-child {
+          .categories-wrapper .categories-inner-wrapper {
+            max-height: 2.5rem;
+          }
+        }
+      }
     }
   }
 
@@ -411,9 +504,5 @@
 
   .badge.last {
     background-color: #871010;
-  }
-
-  .categories {
-    display: none;
   }
 </style>
