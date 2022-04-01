@@ -16,15 +16,26 @@ console.log('starting')
 const cert = process.env.STAIR_HOUSES_SSL_CERT ?? ''
 const key = process.env.STAIR_HOUSES_SSL_KEY ?? ''
 
-const server = fastify({
-  https:
-    cert && key
-      ? {
-          key: fs.readFileSync(key),
-          cert: fs.readFileSync(cert),
-        }
-      : {},
-})
+const makeHTTPSFastify = () => {
+  return fastify({
+    http2: true,
+    https: {
+      allowHTTP1: true,
+      key: fs.readFileSync(key),
+      cert: fs.readFileSync(cert),
+    },
+  })
+}
+
+const makeFastify = (): ReturnType<typeof makeHTTPSFastify> => {
+  if (cert && key) {
+    return makeHTTPSFastify()
+  }
+  // Hack because their signatures are incompatible, but we still want to allow localhost
+  return fastify() as unknown as ReturnType<typeof makeHTTPSFastify>
+}
+
+const server = makeFastify()
 
 server.register(ws)
 
@@ -34,9 +45,11 @@ server.register(fp(fastifyTRPCPlugin), {
   trpcOptions: { router: appRouter, createContext },
 })
 
+const frontendHost = process.env.STAIR_HOUSES_FRONTEND_HOST ?? 'localhost'
+
 server.register(fastifyCors, () => (req, callback) => {
   let corsOptions
-  if (/^localhost$/.test(req.hostname) || /^stair.ch$/.test(req.hostname)) {
+  if (req.hostname === frontendHost) {
     corsOptions = { origin: true }
   } else {
     corsOptions = { origin: false }
@@ -47,7 +60,7 @@ server.register(fastifyCors, () => (req, callback) => {
   try {
     await server.listen(
       process.env.STAIR_HOUSES_SSL_PORT ?? 3033,
-      process.env.STAIR_HOUSES_SSL_IP ?? '0.0.0.0'
+      process.env.STAIR_HOUSES_SSL_IP ?? undefined
     )
     console.log('Listening on port 3033')
   } catch (err) {

@@ -5,8 +5,12 @@ import { COLORS } from './constants'
 import type { PointsCategory, PointsWithStats } from '../../backend/src/data'
 import { BehaviorSubject, Subject } from 'rxjs'
 
+const protocol = import.meta.env.VITE_STAIR_HOUSES_PROTOCOL ?? 'ws'
+const host = import.meta.env.VITE_STAIR_HOUSES_BACKEND_HOST ?? 'localhost'
+const port = import.meta.env.VITE_STAIR_HOUSES_BACKEND_PORT ?? '3033'
+
 const wsClient = createWSClient({
-  url: 'wss://mll.one:3033/',
+  url: protocol + '://' + host + ':' + port + '/',
 })
 
 const client = createTRPCClient<AppRouter>({

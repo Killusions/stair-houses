@@ -2,8 +2,8 @@ import { Collection, Db, MongoClient } from 'mongodb'
 import { COLORS } from './constants'
 import { hash, verify } from 'argon2'
 
-const rawDomain = process.env.STAIR_HOUSES_DATABASE_DOMAIN
-const domain = rawDomain ? encodeURIComponent(rawDomain) : 'localhost'
+const rawHost = process.env.STAIR_HOUSES_DATABASE_HOST
+const host = rawHost ? encodeURIComponent(rawHost) : 'localhost'
 const rawPort = process.env.STAIR_HOUSES_DATABASE_PORT
 const port = rawPort ? encodeURIComponent(rawPort) : '27017'
 const rawUser = process.env.STAIR_HOUSES_DATABASE_USER
@@ -20,12 +20,12 @@ const url =
       ':' +
       password +
       '@' +
-      domain +
+      host +
       ':' +
       port +
       '?authMechanism=' +
       authMechanism
-    : 'mongodb://' + domain + ':' + port
+    : 'mongodb://' + host + ':' + port
 const client = new MongoClient(url)
 
 // Database Name
