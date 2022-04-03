@@ -18,25 +18,26 @@ This project is build with modern web-technologies, the most important are:
 
 #### Frontend
 
-* [Vue.js 3 (Composition API)](https://vuejs.org/)
-* [Vite](https://vitejs.dev)
-* [SCSS/Sass](https://sass-lang.com)
-* [Vue Router](https://router.vuejs.org)
+- [Vue.js 3 (Composition API)](https://vuejs.org/)
+- [Vite](https://vitejs.dev)
+- [SCSS/Sass](https://sass-lang.com)
+- [Vue Router](https://router.vuejs.org)
 
 #### Shared / Both
 
-* [Typescript](https://www.typescriptlang.org)
-* [tRPC](https://trpc.io)
-* [WebSockets](https://developer.mozilla.org/de/docs/Web/API/WebSockets_API)
-* [RxJS](https://rxjs.dev)
+- [Typescript](https://www.typescriptlang.org)
+- [tRPC](https://trpc.io)
+- [WebSockets](https://developer.mozilla.org/de/docs/Web/API/WebSockets_API)
+- [RxJS](https://rxjs.dev)
 
 #### Backend
 
-* [Node.js](https://nodejs.org/en/)
-* [fastify](https://www.fastify.io)
-* [MongoDB](https://www.mongodb.com)
+- [Node.js](https://nodejs.org/en/)
+- [fastify](https://www.fastify.io)
+- [MongoDB](https://www.mongodb.com)
 
 <!-- GETTING STARTED -->
+
 ## Getting Started
 
 To set up the project locally follow the following steps.
@@ -47,34 +48,30 @@ To install and run the project you will need the following:
 
 #### General / Shared
 
-* Git: [install (click here)](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-* a recent version of Node.js and npm:
-[install (click here)](https://nodejs.dev/learn/how-to-install-nodejs), update:
+- Git: [install (click here)](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- a recent version of Node.js and npm:
+  [install (click here)](https://nodejs.dev/learn/how-to-install-nodejs), update:
 
   ```sh
   npm install npm@latest -g
   npm install -g node
   ```
 
-* Yarn v1.x (not 2): [install instructions](https://classic.yarnpkg.com/lang/en/docs/install/#mac-stable) or use
+- Yarn v1.x (not 2): [install instructions](https://classic.yarnpkg.com/lang/en/docs/install/#mac-stable) or use
 
   ```sh
   npm install --global yarn
   ```
-  
+
 #### Backend
 
-* MongoDB: [install (click here)](https://www.mongodb.com/docs/guides/server/install/)
+- MongoDB: [install (click here)](https://www.mongodb.com/docs/guides/server/install/)
 
 #### Frontend
 
-* A (or better multiple) modern browser(s)
+- A (or better multiple) modern browser(s)
 
-### Installation and running
-
-To install and run the project use the following commands.
-
-#### General
+### Cloning and installation
 
 1. Clone the repo
 
@@ -100,33 +97,71 @@ To install and run the project use the following commands.
    yarn
    ```
 
-#### Frontend
+### Subprojects installation and running (easy helper scripts)
 
-4. Enter the directory
+To install and run the subprojects using the helper scripts (from the root level) use the following commands.
 
-   ```sh
-   cd frontend
-   ```
-
-5. Install NPM packages for the frontend
+1. Install NPM packages for all subprojects
 
    ```sh
-   yarn
+   yarn install:all
    ```
 
-6. Start Vite with auto-recomple and auto-refresh on changes (no type checking)
+2. Start the backend and the frontend with auto-recompile, auto-restart and auto-refresh on changes (no type checking in the frontend)
 
    ```sh
-   yarn dev
+   yarn serve
    ```
 
-   or build fully it once (includes type checking and will use production configuration)
+   or build the backend and the frontend completely once (includes type checking in the frontend and will use the production configuration for the frontend)
 
    ```sh
    yarn build
    ```
 
-7. Format using linters
+3. Format everything using linters (includes lint check after formatting each subproject)
+
+   ```sh
+   yarn format
+   ```
+
+   or only lint it
+
+   ```sh
+   yarn lint
+   ```
+
+### Subprojects installation and running (manual)
+
+To install and run the subprojects manually use the following commands.
+
+#### Frontend
+
+1. Enter the directory
+
+   ```sh
+   cd frontend
+   ```
+
+2. Install NPM packages for the frontend
+
+   ```sh
+   yarn
+   ```
+
+3. Start Vite with auto-recompile and auto-refresh on changes (no type checking)
+
+   ```sh
+   yarn dev
+   ```
+
+   or build it completely once (includes type checking and will use the production configuration)
+
+   ```sh
+   yarn build
+   ```
+
+4. Format using linters
 
    ```sh
    yarn format:all
@@ -140,19 +175,19 @@ To install and run the project use the following commands.
 
 #### Backend
 
-4. Enter the directory
+1. Enter the directory
 
    ```sh
    cd backend
    ```
 
-5. Install NPM packages for the backend
+2. Install NPM packages for the backend
 
    ```sh
    yarn
    ```
 
-6. Run typescript with auto-recompile on changes
+3. Run typescript with auto-recompile on changes
 
    ```sh
    yarn watch
@@ -164,14 +199,13 @@ To install and run the project use the following commands.
    yarn build
    ```
 
-7. **Open a new shell instance/terminal** and navigate to the same location
+4. **Open a new shell instance/terminal** and navigate to the same location
 
    ```sh
-   cd stair-houses
    cd backend
    ```
 
-8. Run the program with Node.js and auto-restart on changes
+5. Run the program with Node.js and auto-restart on changes
 
    ```sh
    yarn serve
@@ -183,7 +217,7 @@ To install and run the project use the following commands.
    yarn start
    ```
 
-9.  Format using linters
+6. Format using linters
 
    ```sh
    yarn format:all
@@ -208,7 +242,7 @@ VITE_STAIR_HOUSES_BACKEND_HOST="<domain>"
 VITE_STAIR_HOUSES_BACKEND_PORT="3033"
 ```
 
-These can be set in a `.env.production.local` file in the `frontend` directory so they will be used for every full build (using `yarn build`), but not for testing and development (using `yarn dev`).
+These can be set in a `.env.production.local` file in the `frontend` directory so they will be used for every full build (using `yarn build`), but not for testing and development.
 (Or create a `.env` file to also use it while testing and development.)
 
 In the frontend the environment variables will be loaded in at compile/build time an can therefore be omitted when deploying the compiled/built `dist` files on a webserver.

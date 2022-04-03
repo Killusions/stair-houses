@@ -2,9 +2,20 @@
   "devDependencies": {
     "@commitlint/cli": "^16.2.3",
     "@commitlint/config-conventional": "^16.2.1",
+    "chalk": "4.1.2",
     "husky": "^7.0.4"
   },
   "scripts": {
-    "prepare": "husky install && husky add .husky/commit-msg 'yarn commitlint --edit $1'"
+    "prepare": "husky install",
+    "install:all": "node install.js",
+    "serve": "node serve.js",
+    "watch": "yarn serve",
+    "dev": "yarn serve",
+    "build": "node build.js",
+    "format_and_lint": "node formatAndLint.js",
+    "format": "yarn format_and_lint",
+    "format:all": "yarn format_and_lint",
+    "lint": "node lint.js",
+    "lint:all": "yarn lint"
   }
 }
