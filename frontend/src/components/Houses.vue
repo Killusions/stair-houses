@@ -20,6 +20,31 @@
   let updated = false
   const updatedSubject = new ReplaySubject<void>()
 
+  const currentActiveColor = ref('')
+
+  const currentActiveColorDelayed = ref('')
+
+  const currentActiveColorAnimation = ref('')
+
+  const colorFocus = (color: string, active: boolean) => {
+    if (active) {
+      if (currentActiveColor.value !== color) {
+        currentActiveColor.value = color
+        setTimeout(() => (currentActiveColorDelayed.value = color), 100)
+        setTimeout(() => (currentActiveColorAnimation.value = color), 400)
+      }
+    } else {
+      if (currentActiveColor.value === color) {
+        currentActiveColor.value = ''
+        setTimeout(() => {
+          console.log('false')
+        }, 1000)
+        setTimeout(() => (currentActiveColorDelayed.value = ''), 100)
+        setTimeout(() => (currentActiveColorAnimation.value = ''), 400)
+      }
+    }
+  }
+
   onUpdated(() => {
     if (!updated) {
       updated = true
@@ -172,6 +197,10 @@
         ['house-' + (index + 1)]: true,
       }"
       @click="addPointToColor(data.color)"
+      @focusin="colorFocus(data.color, true)"
+      @focusout="colorFocus(data.color, false)"
+      @mouseover="colorFocus(data.color, true)"
+      @mouseout="colorFocus(data.color, false)"
     >
       <div class="points-container">
         <span
@@ -189,9 +218,19 @@
           :style="{ height: data.currentPercentage + '%' }"
         ></div>
       </div>
-      <div class="categories-wrapper">
-        <div class="categories-inner-wrapper">
-          <div class="categories">
+      <div v-if="secret" class="categories-wrapper">
+        <div
+          class="categories-inner-wrapper"
+          :class="{
+            show:
+              currentActiveColorDelayed === data.color ||
+              currentActiveColorAnimation === data.color,
+          }"
+        >
+          <div
+            class="categories"
+            :class="{ active: currentActiveColorDelayed === data.color }"
+          >
             <div
               v-for="category in data.categories"
               :key="category.name"
@@ -252,7 +291,7 @@
         border: 0.025rem solid rgba(0, 0, 0, 0.5);
         border-radius: 1rem;
         box-shadow: 0 1rem 1rem rgba(0, 0, 0, 0.3);
-        transition: opacity 0.2s ease-in-out;
+        transition: opacity 0.3s ease-in-out;
         opacity: 0;
         font-size: 1rem;
         line-height: 1rem;
@@ -297,6 +336,10 @@
       cursor: pointer;
     }
 
+    .categories-wrapper .categories-inner-wrapper.show {
+      display: block;
+    }
+
     &:hover,
     &:active,
     &:focus {
@@ -306,7 +349,7 @@
       .categories-wrapper .categories-inner-wrapper {
         display: block;
 
-        .categories {
+        .categories.active {
           opacity: 1;
         }
       }
