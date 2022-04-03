@@ -208,8 +208,10 @@ VITE_STAIR_HOUSES_BACKEND_HOST="<domain>"
 VITE_STAIR_HOUSES_BACKEND_PORT="3033"
 ```
 
-These can be set in a `.env.production.local` file in the `frontend` directory so they will be used for every full build (using `yarn build`), but now for testing and development (using `yarn dev`).
+These can be set in a `.env.production.local` file in the `frontend` directory so they will be used for every full build (using `yarn build`), but not for testing and development (using `yarn dev`).
 (Or create a `.env` file to also use it while testing and development.)
+
+In the frontend the environment variables will be loaded in at compile/build time an can therefore be omitted when deploying the compiled/built `dist` files on a webserver.
 
 #### Backend
 
@@ -226,7 +228,9 @@ STAIR_HOUSES_DATABASE_USER="<MongoDB user (can be omitted)>"
 STAIR_HOUSES_DATABASE_PASSWORD="<MongoDB password (can be omitted)
 ```
 
-These can also be set in a `.env` file in the `backend` directory. WARNING: Unlike in the frontend, they will be used for every build (including testing and development).
+These can also be set in a `.env` file in the directory it's run from. WARNING: Unlike in the frontend, they will be used for every run (including testing and development). They are not needed at compile time and can be omitted for most testing and development setups.
+
+Since the environment variables will be loaded at runtime they need to be included when deploying the compiled `dist` files on a server.
 
 ## Contributing
 
