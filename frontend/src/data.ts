@@ -277,7 +277,8 @@ export const logIn = async (password: string, captchaToken?: string) => {
   }
 }
 
-export const logOut = () => {
+export const logOut = async () => {
+  await client.mutation('logout', { sessionId })
   sessionId = ''
   sessionExpires = 0
   localStorage.setItem('session', '')

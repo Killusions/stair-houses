@@ -132,6 +132,21 @@ export const appRouter = trpc
       }
     },
   })
+  .mutation('logout', {
+    input: z.object({
+      sessionId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-explicit-any
+      const ip = (ctx as any).req!.connection!.remoteAddress!
+      const session = sessions[input.sessionId]
+      if (session && session.ip === ip) {
+        delete sessions[input.sessionId]
+      } else {
+        throw new Error('Incorrect sessionId')
+      }
+    },
+  })
 
 setInterval(async () => {
   try {

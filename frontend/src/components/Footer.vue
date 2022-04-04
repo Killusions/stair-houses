@@ -1,5 +1,14 @@
 <script setup lang="ts">
   import { logOut } from '../data'
+
+  const logOutOnclick = async () => {
+    try {
+      await logOut()
+    } catch (e) {
+      console.error(e)
+      throw e
+    }
+  }
 </script>
 
 <template>
@@ -20,7 +29,7 @@
       v-if="$router.currentRoute.value.path === '/admin'"
       to="/"
       class="admin-link footer-item"
-      @click="logOut()"
+      @click="logOutOnclick()"
       >Log out</router-link
     >
     <a href="https://linus.clckm.co/" class="madeby footer-item"
