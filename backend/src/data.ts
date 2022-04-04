@@ -151,7 +151,7 @@ export const ensureDBConnection = () => {
       closed = false
       connecting = true
       await client.connect()
-      console.log('Connected successfully to server')
+      console.log('Connected successfully to database server')
       db = client.db(dbName)
       pointsCollection = db.collection<Points>(pointsCollectionName)
       if ((await pointsCollection.countDocuments()) === 0) {
@@ -180,8 +180,8 @@ export const ensureDBConnection = () => {
       } else {
         password = process.env.STAIR_HOUSES_DEFAULT_PASSWORD
         if (!password) {
-          password = makeId(10)
-          console.log('password: ' + password)
+          password = makeId(15)
+          console.log('Generated password: ' + password)
         }
         const passwordHashed = await hash(password)
         await settingsCollection.insertOne({
