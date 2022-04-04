@@ -240,6 +240,7 @@ To configure and build it for production, set the following environment variable
 VITE_STAIR_HOUSES_PROTOCOL="wss"
 VITE_STAIR_HOUSES_BACKEND_HOST="<domain>"
 VITE_STAIR_HOUSES_BACKEND_PORT="3033"
+VITE_STAIR_HOUSES_CAPTCHA_SITEKEY="<hCaptcha sitekey (can be omitted to disable captcha)>"
 ```
 
 These can be set in a `.env.production.local` file in the `frontend` directory so they will be used for every full build (using `yarn build`), but not for testing and development.
@@ -259,7 +260,8 @@ STAIR_HOUSES_DEFAULT_PASSWORD="<default password to be set on first connection t
 STAIR_HOUSES_DATABASE_HOST="localhost"
 STAIR_HOUSES_DATABASE_PORT="27017"
 STAIR_HOUSES_DATABASE_USER="<MongoDB user (can be omitted)>"
-STAIR_HOUSES_DATABASE_PASSWORD="<MongoDB password (can be omitted)
+STAIR_HOUSES_DATABASE_PASSWORD="<MongoDB password (can be omitted)"
+STAIR_HOUSES_CAPTCHA_SECRET="<hCaptcha secret (can be omitted to disable captcha)>"
 ```
 
 These can also be set in a `.env` file in the directory it's run from. WARNING: Unlike in the frontend, they will be used for every run (including testing and development). They are not needed at compile time and can be omitted for most testing and development setups.
