@@ -49,14 +49,22 @@ export const appRouter = trpc
   .mutation('login', {
     input: z.object({
       password: z.string().nonempty().max(20),
+      captchaToken: z.string().nonempty().max(10000).optional(),
     }),
-    async resolve({ input, ctx }) {
+    async resolve({
+      input,
+      ctx,
+    }): Promise<{ sessionId?: string; showCaptcha: boolean; nextTry: Date }> {
       try {
-        const correct = await verifyPassword(input.password)
-        if (correct) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-explicit-any
+        const ip = (ctx as any).req!.connection!.remoteAddress!
+        const result = await verifyPassword(
+          input.password,
+          ip,
+          input.captchaToken
+        )
+        if (result.success) {
           const sessionId = makeId(20)
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-explicit-any
-          const ip = (ctx as any).req!.connection!.remoteAddress!
           sessions[sessionId] = {
             expirationDate: new Date(
               new Date().getTime() + 1000 * 60 * 60 * 24
@@ -68,9 +76,13 @@ export const appRouter = trpc
               delete sessions[id]
             }
           })
-          return sessionId
+          return {
+            sessionId,
+            showCaptcha: result.showCaptcha,
+            nextTry: result.nextTry,
+          }
         }
-        return ''
+        return { showCaptcha: result.showCaptcha, nextTry: result.nextTry }
       } catch (e: unknown) {
         console.error(e)
         process.exitCode = 1

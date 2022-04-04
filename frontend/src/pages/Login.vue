@@ -2,28 +2,60 @@
   import { useRouter } from 'vue-router'
   import { authFailure, logIn } from '../data'
   import { ref } from 'vue'
+  import moment from 'moment'
+  import Captcha from '../components/Captcha.vue'
+
+  const captchaSitekey =
+    import.meta.env.VITE_STAIR_HOUSES_CAPTCHA_SITEKEY?.toString() ?? ''
+
   const router = useRouter()
 
   const password = ref('')
 
   const message = ref('')
 
+  const showCaptcha = ref(false)
+
+  let captchaToken = ''
+
   const logInAction = async () => {
     try {
-      if (password.value) {
-        const success = await logIn(password.value)
-        if (success) {
-          message.value = ''
-          router.push('/admin')
-        } else {
-          message.value = 'Incorrect password'
-        }
-      } else {
+      if (!password.value) {
         message.value = 'Password cannot be empty'
+        return
+      }
+      if (showCaptcha.value && captchaSitekey && !captchaToken) {
+        message.value = 'Captcha invalid'
+        return
+      }
+      const result = await logIn(
+        password.value,
+        showCaptcha.value && captchaSitekey ? captchaToken : undefined
+      )
+      captchaExpired()
+      if (result.success) {
+        message.value = ''
+        router.push('/admin')
+      } else {
+        const difference = result.nextTry.getTime() - Date.now()
+        message.value =
+          'Incorrect password' +
+          (difference > 0
+            ? ': try again in ' + moment.duration(difference).humanize()
+            : '')
+        showCaptcha.value = result.showCaptcha
       }
     } catch (e) {
       console.error(e)
     }
+  }
+
+  const captchaVerfiy = (token: string) => {
+    captchaToken = token
+  }
+
+  const captchaExpired = () => {
+    captchaToken = ''
   }
 
   authFailure.subscribe(() => {
@@ -45,6 +77,12 @@
       maxlength="20"
       @keyup.enter="logInAction()"
     />
+    <Captcha
+      v-if="showCaptcha && captchaSitekey"
+      :sitekey="captchaSitekey"
+      @verify="captchaVerfiy($event)"
+      @expired="captchaExpired()"
+    ></Captcha>
     <button
       class="login-item login-button"
       @keyup.enter="logInAction()"

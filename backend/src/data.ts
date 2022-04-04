@@ -1,6 +1,8 @@
 import { Collection, Db, MongoClient } from 'mongodb'
 import { COLORS } from './constants'
 import { hash, verify } from 'argon2'
+import hCaptcha from 'hcaptcha'
+import { captchaSecret } from '.'
 
 const rawHost = process.env.STAIR_HOUSES_DATABASE_HOST
 const host = rawHost ? encodeURIComponent(rawHost) : 'localhost'
@@ -105,6 +107,11 @@ let db: Db | undefined = undefined
 let pointsCollection: Collection<Points> | undefined = undefined
 let pointEventsCollection: Collection<PointEvent> | undefined = undefined
 let settingsCollection: Collection<Setting> | undefined = undefined
+
+const passwordTries: Record<string, number> = {}
+const passwordPreviousTimeOuts: Record<string, Date[]> = {}
+const passwordTimeOuts: Record<string, Date> = {}
+const passwordFailedCaptcha: Record<string, number> = {}
 
 export const makeId = (length: number) => {
   let result = ''
@@ -241,7 +248,104 @@ export const ensureNoDBConnection = (forGood = false) => {
   })
 }
 
-export const verifyPassword = async (password: string) => {
+export const verifyPassword = async (
+  password: string,
+  ip: string,
+  captchaToken?: string
+): Promise<{ success: boolean; showCaptcha: boolean; nextTry: Date }> => {
+  const timeOut = passwordTimeOuts[ip]
+  let needsCaptcha = false
+  let previous = passwordPreviousTimeOuts[ip]
+  let previousCount = 0
+  if (previous) {
+    if (previous.length) {
+      passwordPreviousTimeOuts[ip] = previous.filter(
+        (item) => item > new Date(Date.now() - 1000 * 60 * 60 * 24)
+      )
+      if (!passwordPreviousTimeOuts[ip].length) {
+        delete passwordPreviousTimeOuts[ip]
+      }
+      previous = passwordPreviousTimeOuts[ip]
+      previousCount = previous?.length ?? 0
+    }
+  }
+  if (timeOut) {
+    if (timeOut > new Date()) {
+      return {
+        success: false,
+        showCaptcha: previousCount > 3,
+        nextTry: timeOut,
+      }
+    } else {
+      delete passwordTimeOuts[ip]
+      if (previousCount > 2) {
+        needsCaptcha = true
+      }
+    }
+  }
+  if (!passwordTries[ip]) {
+    passwordTries[ip] = 0
+  }
+  passwordTries[ip]++
+  if (passwordTries[ip] > 10) {
+    if (!previous) {
+      passwordPreviousTimeOuts[ip] = []
+      previous = passwordPreviousTimeOuts[ip]
+    }
+    let lengthInMin = 0
+    switch (previousCount) {
+      case 0:
+        lengthInMin = 1
+        break
+      case 1:
+        lengthInMin = 5
+        break
+      case 2:
+        lengthInMin = 20
+        break
+      case 3:
+        lengthInMin = 60
+        break
+      case 4:
+        lengthInMin = 180
+        break
+      case 5:
+        lengthInMin = 540
+        break
+      default:
+        lengthInMin = 1440
+        break
+    }
+    const nextTry = new Date(new Date().getTime() + lengthInMin * 60 * 1000)
+    passwordTimeOuts[ip] = nextTry
+    delete passwordTries[ip]
+    previous.push(new Date())
+    return { success: false, showCaptcha: previousCount > 2, nextTry }
+  } else if (
+    passwordTries[ip] === 4 ||
+    passwordTries[ip] === 7 ||
+    passwordTries[ip] === 9
+  ) {
+    needsCaptcha = true
+  }
+  if (passwordFailedCaptcha[ip]) {
+    needsCaptcha = true
+  }
+  if (needsCaptcha && captchaSecret) {
+    const captcha =
+      captchaToken && (await hCaptcha.verify(captchaSecret, captchaToken))
+    if (!captcha) {
+      if (passwordFailedCaptcha[ip]) {
+        passwordFailedCaptcha[ip]++
+      } else {
+        passwordFailedCaptcha[ip] = 1
+      }
+      return { success: false, showCaptcha: true, nextTry: new Date() }
+    } else {
+      delete passwordFailedCaptcha[ip]
+    }
+  }
+
   await ensureDBConnection()
   settingsCollection = settingsCollection as Collection<Setting>
 
@@ -250,9 +354,28 @@ export const verifyPassword = async (password: string) => {
     type: 'string',
   })) as StringSetting
   if (hashedPasswordObject) {
-    return await verify(hashedPasswordObject.value, password)
+    const result = await verify(hashedPasswordObject.value, password)
+    if (result) {
+      delete passwordTries[ip]
+      delete passwordFailedCaptcha[ip]
+      return {
+        success: true,
+        showCaptcha:
+          passwordTries[ip] === 3 ||
+          passwordTries[ip] === 6 ||
+          passwordTries[ip] === 8,
+        nextTry: new Date(),
+      }
+    }
   }
-  return false
+  return {
+    success: false,
+    showCaptcha:
+      passwordTries[ip] === 3 ||
+      passwordTries[ip] === 6 ||
+      passwordTries[ip] === 8,
+    nextTry: new Date(),
+  }
 }
 
 export const getPoints = async () => {

@@ -7,11 +7,18 @@ import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify'
 import { createContext } from './context'
 import { appRouter } from './router'
 
-import dotenv = require('dotenv')
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const dotenv = require('dotenv')
 
 dotenv.config()
 
+export const captchaSecret = process.env.STAIR_HOUSES_CAPTCHA_SECRET ?? ''
+
 console.log('starting')
+
+if (!captchaSecret) {
+  console.log('Captcha not configured, allowing requests without captcha.')
+}
 
 const cert = process.env.STAIR_HOUSES_SSL_CERT ?? ''
 const key = process.env.STAIR_HOUSES_SSL_KEY ?? ''

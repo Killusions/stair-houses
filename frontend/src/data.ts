@@ -258,14 +258,23 @@ export const subscribePoints = () => {
   return dataSubject
 }
 
-export const logIn = async (password: string) => {
-  sessionId = await client.mutation('login', { password })
+export const logIn = async (password: string, captchaToken?: string) => {
+  const result = await client.mutation('login', { password, captchaToken })
+  if (result.sessionId) {
+    sessionId = result.sessionId
+  } else {
+    sessionId = ''
+  }
   sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5
   if (sessionId) {
     localStorage.setItem('session', sessionId)
     localStorage.setItem('sessionExpires', sessionExpires.toString())
   }
-  return !!sessionId
+  return {
+    success: !!sessionId,
+    showCaptcha: result.showCaptcha,
+    nextTry: new Date(result.nextTry),
+  }
 }
 
 export const logOut = () => {

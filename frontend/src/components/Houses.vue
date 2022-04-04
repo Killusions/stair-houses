@@ -36,9 +36,6 @@
     } else {
       if (currentActiveColor.value === color) {
         currentActiveColor.value = ''
-        setTimeout(() => {
-          console.log('false')
-        }, 1000)
         setTimeout(() => (currentActiveColorDelayed.value = ''), 100)
         setTimeout(() => (currentActiveColorAnimation.value = ''), 400)
       }
