@@ -5,14 +5,14 @@ import {
   addPoints,
   getPointsWithStats,
   makeId,
-  Points,
+  PointsWithStats,
   verifyPassword,
 } from './data.js';
 
 import { Subject } from 'rxjs';
 
 let dataChanged = false;
-const dataChangedEvent = new Subject<Points[]>();
+const dataChangedEvent = new Subject<PointsWithStats[]>();
 
 const sessions: { [key: string]: { expirationDate: Date; ip: string } } = {};
 
@@ -20,12 +20,12 @@ export const appRouter = trpc
   .router()
   .subscription('onPointsChanged', {
     resolve() {
-      return new trpc.Subscription<Points[]>((emit) => {
-        const onPointsIncrease = (data: Points[]) => {
+      return new trpc.Subscription<PointsWithStats[]>((emit) => {
+        const onPointsIncrease = (data: PointsWithStats[]) => {
           emit.data(data);
         };
 
-        const sub = dataChangedEvent.subscribe((data: Points[]) => {
+        const sub = dataChangedEvent.subscribe((data: PointsWithStats[]) => {
           onPointsIncrease(data);
         });
 

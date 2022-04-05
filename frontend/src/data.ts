@@ -242,7 +242,7 @@ export const subscribePoints = () => {
       await client.subscription('onPointsChanged', undefined, {
         onNext: (data) => {
           if (data.type === 'data') {
-            const newData = data.data as PointsWithStats[];
+            const newData = data.data;
             if (isDataNewer(newData)) {
               points = newData;
               const displayData = processData(points);
