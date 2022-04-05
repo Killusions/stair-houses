@@ -1,66 +1,66 @@
 <script setup lang="ts">
-  import { useRouter } from 'vue-router'
-  import { authFailure, logIn } from '../data'
-  import { ref } from 'vue'
-  import moment from 'moment'
-  import Captcha from '../components/Captcha.vue'
+  import { useRouter } from 'vue-router';
+  import { authFailure, logIn } from '../data';
+  import { ref } from 'vue';
+  import moment from 'moment';
+  import Captcha from '../components/Captcha.vue';
 
   const captchaSitekey =
-    import.meta.env.VITE_STAIR_HOUSES_CAPTCHA_SITEKEY?.toString() ?? ''
+    import.meta.env.VITE_STAIR_HOUSES_CAPTCHA_SITEKEY?.toString() ?? '';
 
-  const router = useRouter()
+  const router = useRouter();
 
-  const password = ref('')
+  const password = ref('');
 
-  const message = ref('')
+  const message = ref('');
 
-  const showCaptcha = ref(false)
+  const showCaptcha = ref(false);
 
-  let captchaToken = ''
+  let captchaToken = '';
 
   const logInAction = async () => {
     try {
       if (!password.value) {
-        message.value = 'Password cannot be empty'
-        return
+        message.value = 'Password cannot be empty';
+        return;
       }
       if (showCaptcha.value && captchaSitekey && !captchaToken) {
-        message.value = 'Captcha invalid'
-        return
+        message.value = 'Captcha invalid';
+        return;
       }
       const result = await logIn(
         password.value,
         showCaptcha.value && captchaSitekey ? captchaToken : undefined
-      )
-      captchaExpired()
+      );
+      captchaExpired();
       if (result.success) {
-        message.value = ''
-        router.push('/admin')
+        message.value = '';
+        router.push('/admin');
       } else {
-        const difference = result.nextTry.getTime() - Date.now()
+        const difference = result.nextTry.getTime() - Date.now();
         message.value =
           'Incorrect password' +
           (difference > 0
             ? ': try again in ' + moment.duration(difference).humanize()
-            : '')
-        showCaptcha.value = result.showCaptcha
+            : '');
+        showCaptcha.value = result.showCaptcha;
       }
     } catch (e) {
-      console.error(e)
+      console.error(e);
     }
-  }
+  };
 
   const captchaVerfiy = (token: string) => {
-    captchaToken = token
-  }
+    captchaToken = token;
+  };
 
   const captchaExpired = () => {
-    captchaToken = ''
-  }
+    captchaToken = '';
+  };
 
   authFailure.subscribe(() => {
-    router.push('/login')
-  })
+    router.push('/login');
+  });
 </script>
 
 <template>

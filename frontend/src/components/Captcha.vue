@@ -1,15 +1,15 @@
 <script lang="ts" setup>
-  import VueHcaptcha from '@hcaptcha/vue3-hcaptcha'
+  import VueHcaptcha from '@hcaptcha/vue3-hcaptcha';
   defineProps({
     sitekey: {
       type: String,
       required: true,
     },
-  })
+  });
   const emit = defineEmits<{
-    (e: 'verify', value: string): void
-    (e: 'expired'): void
-  }>()
+    (e: 'verify', value: string): void;
+    (e: 'expired'): void;
+  }>();
 </script>
 
 <template>

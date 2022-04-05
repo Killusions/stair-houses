@@ -1,18 +1,18 @@
 <script setup lang="ts">
-  import { logOut } from '../data'
+  import { logOut } from '../data';
 
   const logOutOnclick = async () => {
     try {
-      await logOut()
+      await logOut();
     } catch (e) {
-      console.error(e)
-      throw e
+      console.error(e);
+      throw e;
     }
-  }
+  };
 
   const mailToPr = () => {
-    location.href = 'mailto:pr@stair.ch?&subject=STAIR Houses Website'
-  }
+    location.href = 'mailto:pr@stair.ch?&subject=STAIR Houses Website';
+  };
 </script>
 
 <template>

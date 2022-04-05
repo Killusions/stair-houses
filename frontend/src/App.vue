@@ -1,22 +1,22 @@
 <script setup lang="ts">
-  import { ref } from 'vue'
-  import { subscribePoints, zeroData } from './data'
-  import HeaderBar from './components/HeaderBar.vue'
-  import Footer from './components/Footer.vue'
+  import { ref } from 'vue';
+  import { subscribePoints, zeroData } from './data';
+  import HeaderBar from './components/HeaderBar.vue';
+  import Footer from './components/Footer.vue';
 
   subscribePoints().subscribe((data) => {
     if (data !== zeroData) {
-      loading.value = false
+      loading.value = false;
     }
-  })
+  });
 
   subscribePoints().subscribe((data) => {
     if (data !== zeroData) {
-      loading.value = false
+      loading.value = false;
     }
-  })
+  });
 
-  let loading = ref(true)
+  let loading = ref(true);
 </script>
 
 <template>

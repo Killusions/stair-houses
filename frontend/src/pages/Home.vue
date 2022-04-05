@@ -1,7 +1,7 @@
 <script setup lang="ts">
-  import Houses from '../components/Houses.vue'
-  import Ranking from '../components/Ranking.vue'
-  import { ranking } from '../settings'
+  import Houses from '../components/Houses.vue';
+  import Ranking from '../components/Ranking.vue';
+  import { ranking } from '../settings';
 </script>
 
 <template>

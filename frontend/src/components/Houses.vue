@@ -1,112 +1,112 @@
 <script setup lang="ts">
-  import { BehaviorSubject, ReplaySubject } from 'rxjs'
-  import { onUpdated, ref } from 'vue'
-  import moment from 'moment'
-  import { secret, settings } from '../settings'
+  import { BehaviorSubject, ReplaySubject } from 'rxjs';
+  import { onUpdated, ref } from 'vue';
+  import moment from 'moment';
+  import { secret, settings } from '../settings';
   import {
     addPoints,
     DisplayData,
     getPoints,
     subscribePoints,
     zeroData,
-  } from '../data'
+  } from '../data';
 
-  const props = defineProps({ allowEdit: { type: Boolean, default: false } })
+  const props = defineProps({ allowEdit: { type: Boolean, default: false } });
 
-  const displayData: BehaviorSubject<DisplayData> = subscribePoints()
+  const displayData: BehaviorSubject<DisplayData> = subscribePoints();
 
-  const showColors = ref(true)
+  const showColors = ref(true);
 
-  let updated = false
-  const updatedSubject = new ReplaySubject<void>()
+  let updated = false;
+  const updatedSubject = new ReplaySubject<void>();
 
-  const currentActiveColor = ref('')
+  const currentActiveColor = ref('');
 
-  const currentActiveColorDelayed = ref('')
+  const currentActiveColorDelayed = ref('');
 
-  const currentActiveColorAnimation = ref('')
+  const currentActiveColorAnimation = ref('');
 
   const colorFocus = (color: string, active: boolean) => {
     if (active) {
       if (currentActiveColor.value !== color) {
-        currentActiveColor.value = color
-        setTimeout(() => (currentActiveColorDelayed.value = color), 100)
-        setTimeout(() => (currentActiveColorAnimation.value = color), 400)
+        currentActiveColor.value = color;
+        setTimeout(() => (currentActiveColorDelayed.value = color), 100);
+        setTimeout(() => (currentActiveColorAnimation.value = color), 400);
       }
     } else {
       if (currentActiveColor.value === color) {
-        currentActiveColor.value = ''
-        setTimeout(() => (currentActiveColorDelayed.value = ''), 100)
-        setTimeout(() => (currentActiveColorAnimation.value = ''), 400)
+        currentActiveColor.value = '';
+        setTimeout(() => (currentActiveColorDelayed.value = ''), 100);
+        setTimeout(() => (currentActiveColorAnimation.value = ''), 400);
       }
     }
-  }
+  };
 
   onUpdated(() => {
     if (!updated) {
-      updated = true
-      updatedSubject.next()
+      updated = true;
+      updatedSubject.next();
     }
-  })
+  });
 
-  let first = true
+  let first = true;
 
-  const displayActualData = ref(displayData.value)
+  const displayActualData = ref(displayData.value);
   if (displayActualData.value !== zeroData) {
     if (updated) {
       setTimeout(() => {
         displayActualData.value.forEach(
           (actualData) =>
             (actualData.currentPercentage = actualData.relativePercentage)
-        )
-      })
+        );
+      });
     } else {
       updatedSubject.subscribe(() => {
         setTimeout(() => {
           displayActualData.value.forEach(
             (actualData) =>
               (actualData.currentPercentage = actualData.relativePercentage)
-          )
-        })
-      })
+          );
+        });
+      });
     }
   }
 
   displayData.subscribe((data) => {
-    displayActualData.value = data
+    displayActualData.value = data;
     if (updated) {
       if (!first) {
-        showColors.value = false
+        showColors.value = false;
       }
       setTimeout(() => {
-        showColors.value = true
+        showColors.value = true;
         displayActualData.value.forEach(
           (actualData) =>
             (actualData.currentPercentage = actualData.relativePercentage)
-        )
-      })
+        );
+      });
     } else {
       updatedSubject.subscribe(() => {
         setTimeout(() => {
-          showColors.value = true
+          showColors.value = true;
           displayActualData.value.forEach(
             (actualData) =>
               (actualData.currentPercentage = actualData.relativePercentage)
-          )
-        })
-      })
-      first = false
+          );
+        });
+      });
+      first = false;
     }
-  })
+  });
 
-  const pressedColor = ref('red')
+  const pressedColor = ref('red');
 
-  const errorMessage = ref('')
-  const displayErrorMessage = ref(false)
+  const errorMessage = ref('');
+  const displayErrorMessage = ref(false);
 
-  getPoints()
+  getPoints();
 
-  let secretCounter = 0
+  let secretCounter = 0;
 
   const addPointToColor = async (color: string) => {
     try {
@@ -117,17 +117,17 @@
           typeof settings.value.amount !== 'number'
         ) {
           if (!displayErrorMessage.value) {
-            setTimeout(() => (displayErrorMessage.value = true))
+            setTimeout(() => (displayErrorMessage.value = true));
           }
-          errorMessage.value = 'Please enter a valid amount.'
+          errorMessage.value = 'Please enter a valid amount.';
         } else if (
           !settings.value.date ||
           isNaN(moment(settings.value.date).toDate().getTime())
         ) {
           if (!displayErrorMessage.value) {
-            setTimeout(() => (displayErrorMessage.value = true))
+            setTimeout(() => (displayErrorMessage.value = true));
           }
-          errorMessage.value = 'Please enter a valid date.'
+          errorMessage.value = 'Please enter a valid date.';
         } else if (
           !settings.value.reason &&
           (errorMessage.value !==
@@ -135,14 +135,14 @@
             pressedColor.value !== color)
         ) {
           if (!displayErrorMessage.value) {
-            setTimeout(() => (displayErrorMessage.value = true))
+            setTimeout(() => (displayErrorMessage.value = true));
           }
           errorMessage.value =
-            'Please enter a reason. Press again to send anyway.'
+            'Please enter a reason. Press again to send anyway.';
         } else {
           if (displayErrorMessage.value) {
-            displayErrorMessage.value = false
-            setTimeout(() => (errorMessage.value = ''))
+            displayErrorMessage.value = false;
+            setTimeout(() => (errorMessage.value = ''));
           }
           await addPoints(
             color,
@@ -152,34 +152,34 @@
               : undefined,
             settings.value.owner,
             settings.value.reason
-          )
+          );
           if (!settings.value.keepAmount) {
-            settings.value.amount = 1
+            settings.value.amount = 1;
           }
           if (!settings.value.keepDate) {
-            const currentDate = moment(new Date()).format('YYYY-MM-DDThh:mm')
-            settings.value.date = currentDate
+            const currentDate = moment(new Date()).format('YYYY-MM-DDThh:mm');
+            settings.value.date = currentDate;
           }
           if (!settings.value.keepOwner) {
-            settings.value.owner = ''
+            settings.value.owner = '';
           }
           if (!settings.value.keepReason) {
-            settings.value.reason = ''
+            settings.value.reason = '';
           }
         }
-        pressedColor.value = color
+        pressedColor.value = color;
       } else {
         if (color === 'orange') {
-          secretCounter++
+          secretCounter++;
           if (secretCounter >= 10) {
-            secret.value = true
+            secret.value = true;
           }
         }
       }
     } catch (e) {
-      console.error(e)
+      console.error(e);
     }
-  }
+  };
 </script>
 
 <template>

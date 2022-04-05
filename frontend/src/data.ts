@@ -1,17 +1,17 @@
-import type { AppRouter } from '../../backend/src/router'
-import { createWSClient, wsLink } from '@trpc/client/links/wsLink'
-import { createTRPCClient } from '@trpc/client'
-import { COLORS } from './constants'
-import type { PointsCategory, PointsWithStats } from '../../backend/src/data'
-import { BehaviorSubject, Subject } from 'rxjs'
+import type { AppRouter } from '../../backend/src/router';
+import { createWSClient, wsLink } from '@trpc/client/links/wsLink';
+import { createTRPCClient } from '@trpc/client';
+import { COLORS } from './constants';
+import type { PointsCategory, PointsWithStats } from '../../backend/src/data';
+import { BehaviorSubject, Subject } from 'rxjs';
 
-const protocol = import.meta.env.VITE_STAIR_HOUSES_PROTOCOL ?? 'ws'
-const host = import.meta.env.VITE_STAIR_HOUSES_BACKEND_HOST ?? 'localhost'
-const port = import.meta.env.VITE_STAIR_HOUSES_BACKEND_PORT ?? '3033'
+const protocol = import.meta.env.VITE_STAIR_HOUSES_PROTOCOL ?? 'ws';
+const host = import.meta.env.VITE_STAIR_HOUSES_BACKEND_HOST ?? 'localhost';
+const port = import.meta.env.VITE_STAIR_HOUSES_BACKEND_PORT ?? '3033';
 
 const wsClient = createWSClient({
   url: protocol + '://' + host + ':' + port + '/',
-})
+});
 
 const client = createTRPCClient<AppRouter>({
   links: [
@@ -19,109 +19,110 @@ const client = createTRPCClient<AppRouter>({
       client: wsClient,
     }),
   ],
-})
+});
 
 let points: PointsWithStats[] = Object.keys(COLORS).map((item) => ({
   color: item as keyof typeof COLORS,
   points: 0,
   lastChanged: new Date(0),
   categories: [],
-}))
+}));
 
 export interface DisplayColor {
-  color: string
-  colorString: string
-  points: number
-  relativePercentage: number
-  currentPercentage: number
-  badgeString: string
-  badgeClass?: string
-  categories: PointsCategory[]
+  color: string;
+  colorString: string;
+  points: number;
+  relativePercentage: number;
+  currentPercentage: number;
+  badgeString: string;
+  badgeClass?: string;
+  categories: PointsCategory[];
 }
 
-export type DisplayData = DisplayColor[]
+export type DisplayData = DisplayColor[];
 
-const placesStrings = ['1st', '2nd', '3rd', '4th', '5th', '6th']
+const placesStrings = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
 
-const lastString = ''
+const lastString = '';
 
-const scale = 2.1
-const maxGrowScale = 1.5
+const scale = 2.1;
+const maxGrowScale = 1.5;
 
-let previousMaxIndex = 0
+let previousMaxIndex = 0;
 
-const randomOrder: { [key: string]: number } = {}
+const randomOrder: { [key: string]: number } = {};
 
-let sessionExpires = parseInt(localStorage.getItem('sessionExpires') ?? '') ?? 0
+let sessionExpires =
+  parseInt(localStorage.getItem('sessionExpires') ?? '') ?? 0;
 
-let sessionId = localStorage.getItem('session') ?? ''
+let sessionId = localStorage.getItem('session') ?? '';
 
 export const hasSessionId = () => {
-  return !!sessionId && sessionExpires > new Date().getTime()
-}
+  return !!sessionId && sessionExpires > new Date().getTime();
+};
 
 const processData = (data: PointsWithStats[], zero = false): DisplayData => {
-  const highestPoints = Math.max(...data.map((item) => item.points))
+  const highestPoints = Math.max(...data.map((item) => item.points));
 
-  let pointsMaxIndex = scale * highestPoints
+  let pointsMaxIndex = scale * highestPoints;
   if (previousMaxIndex) {
     if (pointsMaxIndex < previousMaxIndex * maxGrowScale) {
-      pointsMaxIndex = previousMaxIndex
+      pointsMaxIndex = previousMaxIndex;
     } else {
-      pointsMaxIndex = pointsMaxIndex / maxGrowScale
+      pointsMaxIndex = pointsMaxIndex / maxGrowScale;
     }
   }
 
-  previousMaxIndex = pointsMaxIndex
+  previousMaxIndex = pointsMaxIndex;
 
   if (!pointsMaxIndex) {
-    pointsMaxIndex = 1
+    pointsMaxIndex = 1;
   }
 
   const dataNormalizedArray: {
-    color: string
-    relative: number
-    points: number
-    categories: PointsCategory[]
+    color: string;
+    relative: number;
+    points: number;
+    categories: PointsCategory[];
   }[] = data.map((item) => ({
     color: item.color,
     relative: item.points / pointsMaxIndex,
     points: item.points,
     categories: item.categories,
-  }))
+  }));
 
   dataNormalizedArray.sort((a, b) => {
     if (a.points < b.points) {
-      return 1
+      return 1;
     }
     if (a.points > b.points) {
-      return -1
+      return -1;
     }
-    const previousRandom = randomOrder[a.color + '-' + b.color]
+    const previousRandom = randomOrder[a.color + '-' + b.color];
     if (previousRandom) {
-      return 0
+      return 0;
     }
-    const previousReverseRandom = randomOrder[b.color + '-' + a.color]
+    const previousReverseRandom = randomOrder[b.color + '-' + a.color];
     if (previousReverseRandom) {
-      return 0
+      return 0;
     }
-    const random = Math.random()
-    randomOrder[a.color + '-' + b.color] = random
+    const random = Math.random();
+    randomOrder[a.color + '-' + b.color] = random;
     if (random < 0.5) {
-      return 0
+      return 0;
     } else {
-      return -1
+      return -1;
     }
-  })
+  });
 
-  let previousScore = -1
-  let previousPlaceString = ''
+  let previousScore = -1;
+  let previousPlaceString = '';
 
   const displayData: DisplayData = dataNormalizedArray.map((item, index) => {
-    let badgeString = ''
-    let badgeClass = ''
+    let badgeString = '';
+    let badgeClass = '';
     if (item.points === previousScore) {
-      badgeString = previousPlaceString
+      badgeString = previousPlaceString;
     } else {
       if (
         lastString &&
@@ -131,22 +132,22 @@ const processData = (data: PointsWithStats[], zero = false): DisplayData => {
             .slice(index)
             .find((searchItem) => searchItem.points < item.points))
       ) {
-        previousPlaceString = lastString
+        previousPlaceString = lastString;
       } else {
-        previousPlaceString = placesStrings[index] ?? ''
+        previousPlaceString = placesStrings[index] ?? '';
       }
-      badgeString = previousPlaceString
-      previousScore = item.points
+      badgeString = previousPlaceString;
+      previousScore = item.points;
     }
 
     if (placesStrings[0] === previousPlaceString) {
-      badgeClass = 'first'
+      badgeClass = 'first';
     } else if (placesStrings[1] === previousPlaceString) {
-      badgeClass = 'second'
+      badgeClass = 'second';
     } else if (placesStrings[2] === previousPlaceString) {
-      badgeClass = 'third'
+      badgeClass = 'third';
     } else if (lastString && lastString === previousPlaceString) {
-      badgeClass = 'last'
+      badgeClass = 'last';
     }
     const returnObject: DisplayColor = {
       color: item.color,
@@ -160,43 +161,43 @@ const processData = (data: PointsWithStats[], zero = false): DisplayData => {
       badgeString,
       badgeClass,
       categories: item.categories.sort((a, b) => b.amount - a.amount),
-    }
-    return returnObject
-  })
+    };
+    return returnObject;
+  });
 
-  return displayData
-}
+  return displayData;
+};
 
-export const zeroData = processData(points, true)
+export const zeroData = processData(points, true);
 
-const dataSubject = new BehaviorSubject(zeroData)
+const dataSubject = new BehaviorSubject(zeroData);
 
-export const authFailure = new Subject<void>()
+export const authFailure = new Subject<void>();
 
-export const inLogin = new Subject<boolean>()
+export const inLogin = new Subject<boolean>();
 
 const getLatestTimestamp = (data: PointsWithStats[]) => {
-  return Math.max(...data.map((item) => new Date(item.lastChanged).getTime()))
-}
+  return Math.max(...data.map((item) => new Date(item.lastChanged).getTime()));
+};
 
 const isDataNewer = (data: PointsWithStats[]) => {
-  return getLatestTimestamp(data) > getLatestTimestamp(points)
-}
+  return getLatestTimestamp(data) > getLatestTimestamp(points);
+};
 
 export const getPoints = async () => {
   try {
-    const data = await client.query('getPoints')
+    const data = await client.query('getPoints');
     if (isDataNewer(data)) {
-      points = data
-      const displayData = processData(points)
-      dataSubject.next(displayData)
+      points = data;
+      const displayData = processData(points);
+      dataSubject.next(displayData);
     }
-    return dataSubject.value
+    return dataSubject.value;
   } catch (e) {
-    console.error(e)
-    throw e
+    console.error(e);
+    throw e;
   }
-}
+};
 
 export const addPoints = async (
   color: string,
@@ -207,8 +208,8 @@ export const addPoints = async (
 ) => {
   try {
     if (!sessionId) {
-      authFailure.next()
-      throw new Error('no sessionId')
+      authFailure.next();
+      throw new Error('no sessionId');
     }
     const data = await client.mutation('addPoints', {
       color,
@@ -217,70 +218,70 @@ export const addPoints = async (
       date: date ? date.getTime() : undefined,
       owner: owner || undefined,
       reason: reason || undefined,
-    })
+    });
     if (isDataNewer(data)) {
-      points = data
-      const displayData = processData(points)
-      dataSubject.next(displayData)
+      points = data;
+      const displayData = processData(points);
+      dataSubject.next(displayData);
     }
-    return dataSubject.value
+    return dataSubject.value;
   } catch (e: unknown) {
     if (e instanceof Error && e.message === 'Incorrect sessionId') {
-      authFailure.next()
-      throw e
+      authFailure.next();
+      throw e;
     } else {
-      console.error(e)
-      throw e
+      console.error(e);
+      throw e;
     }
   }
-}
+};
 
 export const subscribePoints = () => {
-  ;(async () => {
+  (async () => {
     try {
       await client.subscription('onPointsChanged', undefined, {
         onNext: (data) => {
           if (data.type === 'data') {
-            const newData = data.data as PointsWithStats[]
+            const newData = data.data as PointsWithStats[];
             if (isDataNewer(newData)) {
-              points = newData
-              const displayData = processData(points)
-              dataSubject.next(displayData)
+              points = newData;
+              const displayData = processData(points);
+              dataSubject.next(displayData);
             }
           }
         },
-      })
+      });
     } catch (e) {
-      console.error(e)
-      throw e
+      console.error(e);
+      throw e;
     }
-  })()
-  return dataSubject
-}
+  })();
+  return dataSubject;
+};
 
 export const logIn = async (password: string, captchaToken?: string) => {
-  const result = await client.mutation('login', { password, captchaToken })
+  const result = await client.mutation('login', { password, captchaToken });
   if (result.sessionId) {
-    sessionId = result.sessionId
+    sessionId = result.sessionId;
   } else {
-    sessionId = ''
+    sessionId = '';
   }
-  sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5
+  sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5;
   if (sessionId) {
-    localStorage.setItem('session', sessionId)
-    localStorage.setItem('sessionExpires', sessionExpires.toString())
+    localStorage.setItem('session', sessionId);
+    localStorage.setItem('sessionExpires', sessionExpires.toString());
   }
   return {
     success: !!sessionId,
     showCaptcha: result.showCaptcha,
     nextTry: new Date(result.nextTry),
-  }
-}
+  };
+};
 
 export const logOut = async () => {
-  await client.mutation('logout', { sessionId })
-  sessionId = ''
-  sessionExpires = 0
-  localStorage.setItem('session', '')
-  localStorage.setItem('sessionExpires', '')
-}
+  await client.mutation('logout', { sessionId });
+  sessionId = '';
+  sessionExpires = 0;
+  localStorage.setItem('session', '');
+  localStorage.setItem('sessionExpires', '');
+};

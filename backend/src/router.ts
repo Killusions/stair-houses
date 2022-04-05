@@ -1,20 +1,20 @@
-import * as trpc from '@trpc/server'
-import { z } from 'zod'
-import { COLORS, REFRESH_INTERVAL } from './constants.js'
+import * as trpc from '@trpc/server';
+import { z } from 'zod';
+import { COLORS, REFRESH_INTERVAL } from './constants.js';
 import {
   addPoints,
   getPointsWithStats,
   makeId,
   Points,
   verifyPassword,
-} from './data.js'
+} from './data.js';
 
-import { Subject } from 'rxjs'
+import { Subject } from 'rxjs';
 
-let dataChanged = false
-const dataChangedEvent = new Subject<Points[]>()
+let dataChanged = false;
+const dataChangedEvent = new Subject<Points[]>();
 
-const sessions: { [key: string]: { expirationDate: Date; ip: string } } = {}
+const sessions: { [key: string]: { expirationDate: Date; ip: string } } = {};
 
 export const appRouter = trpc
   .router()
@@ -22,27 +22,27 @@ export const appRouter = trpc
     resolve() {
       return new trpc.Subscription<Points[]>((emit) => {
         const onPointsIncrease = (data: Points[]) => {
-          emit.data(data)
-        }
+          emit.data(data);
+        };
 
         const sub = dataChangedEvent.subscribe((data: Points[]) => {
-          onPointsIncrease(data)
-        })
+          onPointsIncrease(data);
+        });
 
         return () => {
-          sub.unsubscribe()
-        }
-      })
+          sub.unsubscribe();
+        };
+      });
     },
   })
   .query('getPoints', {
     async resolve() {
       try {
-        return await getPointsWithStats()
+        return await getPointsWithStats();
       } catch (e: unknown) {
-        console.error(e)
-        process.exitCode = 1
-        throw new Error('Internal server error')
+        console.error(e);
+        process.exitCode = 1;
+        throw new Error('Internal server error');
       }
     },
   })
@@ -57,36 +57,36 @@ export const appRouter = trpc
     }): Promise<{ sessionId?: string; showCaptcha: boolean; nextTry: Date }> {
       try {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-explicit-any
-        const ip = (ctx as any).req!.connection!.remoteAddress!
+        const ip = (ctx as any).req!.connection!.remoteAddress!;
         const result = await verifyPassword(
           input.password,
           ip,
           input.captchaToken
-        )
+        );
         if (result.success) {
-          const sessionId = makeId(20)
+          const sessionId = makeId(20);
           sessions[sessionId] = {
             expirationDate: new Date(
               new Date().getTime() + 1000 * 60 * 60 * 24
             ),
             ip,
-          }
+          };
           Object.keys(sessions).forEach((id) => {
             if (sessions[id].expirationDate < new Date()) {
-              delete sessions[id]
+              delete sessions[id];
             }
-          })
+          });
           return {
             sessionId,
             showCaptcha: result.showCaptcha,
             nextTry: result.nextTry,
-          }
+          };
         }
-        return { showCaptcha: result.showCaptcha, nextTry: result.nextTry }
+        return { showCaptcha: result.showCaptcha, nextTry: result.nextTry };
       } catch (e: unknown) {
-        console.error(e)
-        process.exitCode = 1
-        throw new Error('Internal server error')
+        console.error(e);
+        process.exitCode = 1;
+        throw new Error('Internal server error');
       }
     },
   })
@@ -101,16 +101,16 @@ export const appRouter = trpc
     }),
     async resolve({ input, ctx }) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-explicit-any
-      const ip = (ctx as any).req!.connection!.remoteAddress!
-      const session = sessions[input.sessionId]
+      const ip = (ctx as any).req!.connection!.remoteAddress!;
+      const session = sessions[input.sessionId];
       if (session && session.ip === ip && session.expirationDate > new Date()) {
         if (!Object.keys(COLORS).includes(input.color)) {
-          throw new Error('Color does not exist')
+          throw new Error('Color does not exist');
         } else {
           try {
-            let date = input.date ? new Date(input.date) : undefined
+            let date = input.date ? new Date(input.date) : undefined;
             if (date && isNaN(date.getTime())) {
-              date = undefined
+              date = undefined;
             }
             const points = await addPoints(
               input.color,
@@ -118,17 +118,17 @@ export const appRouter = trpc
               date,
               input.owner,
               input.reason
-            )
-            dataChanged = true
-            return points
+            );
+            dataChanged = true;
+            return points;
           } catch (e: unknown) {
-            console.error(e)
-            process.exitCode = 1
-            throw new Error('Internal server error')
+            console.error(e);
+            process.exitCode = 1;
+            throw new Error('Internal server error');
           }
         }
       } else {
-        throw new Error('Incorrect sessionId')
+        throw new Error('Incorrect sessionId');
       }
     },
   })
@@ -138,27 +138,27 @@ export const appRouter = trpc
     }),
     async resolve({ input, ctx }) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-explicit-any
-      const ip = (ctx as any).req!.connection!.remoteAddress!
-      const session = sessions[input.sessionId]
+      const ip = (ctx as any).req!.connection!.remoteAddress!;
+      const session = sessions[input.sessionId];
       if (session && session.ip === ip) {
-        delete sessions[input.sessionId]
+        delete sessions[input.sessionId];
       } else {
-        throw new Error('Incorrect sessionId')
+        throw new Error('Incorrect sessionId');
       }
     },
-  })
+  });
 
 setInterval(async () => {
   try {
     if (dataChanged) {
-      dataChanged = false
-      dataChangedEvent.next(await getPointsWithStats())
+      dataChanged = false;
+      dataChangedEvent.next(await getPointsWithStats());
     }
   } catch (e: unknown) {
-    console.error(e)
-    process.exitCode = 1
-    throw new Error('Internal server error')
+    console.error(e);
+    process.exitCode = 1;
+    throw new Error('Internal server error');
   }
-}, REFRESH_INTERVAL)
+}, REFRESH_INTERVAL);
 
-export type AppRouter = typeof appRouter
+export type AppRouter = typeof appRouter;

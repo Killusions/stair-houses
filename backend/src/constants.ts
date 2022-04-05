@@ -5,6 +5,6 @@ export const COLORS = {
   grey: 'Grey',
   orange: 'Orange',
   yellow: 'Yellow',
-}
+};
 
-export const REFRESH_INTERVAL = 500
+export const REFRESH_INTERVAL = 500;

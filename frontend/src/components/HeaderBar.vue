@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ranking, secret } from '../settings'
+  import { ranking, secret } from '../settings';
 </script>
 
 <template>

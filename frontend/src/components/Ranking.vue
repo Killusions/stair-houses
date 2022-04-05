@@ -1,19 +1,19 @@
 <script setup lang="ts">
-  import { BehaviorSubject } from 'rxjs'
-  import { ref } from 'vue'
-  import { DisplayData, getPoints, subscribePoints } from '../data'
+  import { BehaviorSubject } from 'rxjs';
+  import { ref } from 'vue';
+  import { DisplayData, getPoints, subscribePoints } from '../data';
 
-  const displayData: BehaviorSubject<DisplayData> = subscribePoints()
+  const displayData: BehaviorSubject<DisplayData> = subscribePoints();
 
-  const showColors = ref(true)
+  const showColors = ref(true);
 
-  const displayActualData = ref(displayData.value)
+  const displayActualData = ref(displayData.value);
 
   displayData.subscribe((data) => {
-    displayActualData.value = data
-  })
+    displayActualData.value = data;
+  });
 
-  getPoints()
+  getPoints();
 </script>
 
 <template>

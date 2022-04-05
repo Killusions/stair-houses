@@ -1,11 +1,11 @@
-import moment from 'moment'
-import { ref } from 'vue'
+import moment from 'moment';
+import { ref } from 'vue';
 
-export const ranking = ref(false)
+export const ranking = ref(false);
 
-export const secret = ref(false)
+export const secret = ref(false);
 
-const currentDate = moment(new Date()).format('YYYY-MM-DDThh:mm')
+const currentDate = moment(new Date()).format('YYYY-MM-DDThh:mm');
 
 export const settings = ref({
   amount: ref(1),
@@ -16,4 +16,4 @@ export const settings = ref({
   keepOwner: false,
   reason: ref(''),
   keepReason: false,
-})
+});

@@ -1,2 +1,2 @@
 /* eslint-disable */
-declare module '@hcaptcha/vue3-hcaptcha'
+declare module '@hcaptcha/vue3-hcaptcha';
