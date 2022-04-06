@@ -128,7 +128,6 @@
     border: solid 0.1rem rgb(179, 179, 179);
     border-radius: 1rem;
     box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
-    font-family: Arial, Helvetica, sans-serif;
   }
 
   .login-button {

@@ -1,3 +1,5 @@
+@import 'fonts';
+
 html,
 body {
   width: 100%;
@@ -7,6 +9,7 @@ body {
   border: none;
   font-size: calc(6px + 1.5vw);
   user-select: none;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 @media (min-aspect-ratio: 7/2) {

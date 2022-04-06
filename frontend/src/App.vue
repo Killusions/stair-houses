@@ -47,7 +47,7 @@
       rgba(62, 62, 62, 1) 100%
     );
     color: #ffffff;
-    font-family: Arial, Helvetica, sans-serif;
+
     padding: 0;
     margin: 0;
     border: none;
@@ -74,7 +74,6 @@
     font-size: 2rem;
     text-align: center;
     color: #ffffff;
-    font-family: Arial, Helvetica, sans-serif;
     padding: 0;
     margin: 0;
     border: none;

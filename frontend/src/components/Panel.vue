@@ -132,7 +132,6 @@
         border: solid 0.2vh rgb(179, 179, 179);
         border-radius: 2vh;
         box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
-        font-family: Arial, Helvetica, sans-serif;
 
         &.warning {
           border: solid 0.3vh rgb(194, 0, 0);
