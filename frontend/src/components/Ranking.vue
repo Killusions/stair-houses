@@ -89,7 +89,7 @@
 
   .subheader {
     text-align: center;
-    font-size: 10.5vh;
+    font-size: 9.5vh;
     line-height: 10.5vh;
     margin: 0;
     margin-top: 12vh;
@@ -190,7 +190,7 @@
     }
 
     .subheader {
-      font-size: 10.5vw * $vw-scaling-factor;
+      font-size: 9vw * $vw-scaling-factor;
       line-height: 10.5vw * $vw-scaling-factor;
       margin-top: 12vw * $vw-scaling-factor;
       margin-bottom: 4.55vw * $vw-scaling-factor;
