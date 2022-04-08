@@ -9,6 +9,10 @@
       throw e
     }
   }
+
+  const mailToPr = () => {
+    location.href = 'mailto:pr@stair.ch?&subject=STAIR Houses Website'
+  }
 </script>
 
 <template>
@@ -32,9 +36,7 @@
       @click="logOutOnclick()"
       >Log out</router-link
     >
-    <a href="https://linus.clckm.co/" class="madeby footer-item"
-      >Webdesign by Linus</a
-    >
+    <a class="contact footer-item" @click="mailToPr()">Contact</a>
   </div>
 </template>
 
@@ -57,8 +59,9 @@
   }
 
   .subtitle,
-  .madeby {
+  .contact {
     flex: 1;
+    cursor: pointer;
   }
 
   .subtitle {
@@ -69,7 +72,7 @@
     text-align: center;
   }
 
-  .madeby {
+  .contact {
     text-align: right;
   }
 
