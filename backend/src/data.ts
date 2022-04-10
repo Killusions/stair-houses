@@ -3,7 +3,8 @@ import { COLORS } from './constants.js';
 import { hash, verify } from 'argon2';
 import hCaptcha from 'hcaptcha';
 import cryptoRandomString from 'crypto-random-string';
-import { captchaSecret } from './index.js';
+import { captchaSecret, frontendHost } from './index.js';
+import nodemailer from 'nodemailer';
 
 const rawHost = process.env.STAIR_HOUSES_DATABASE_HOST;
 const host = rawHost ? encodeURIComponent(rawHost) : 'localhost';
@@ -14,6 +15,24 @@ const user = rawUser ? encodeURIComponent(rawUser) : '';
 const rawPassword = process.env.STAIR_HOUSES_DATABASE_PASSWORD;
 const password = rawPassword ? encodeURIComponent(rawPassword) : '';
 const authMechanism = user && password ? 'DEFAULT' : '';
+
+const mailHostname = process.env.STAIR_HOUSES_MAIL_HOSTNAME;
+const mailPort = parseInt(process.env.STAIR_HOUSES_MAIL_PORT ?? '') || 587;
+const mailSecure =
+  (!!process.env.STAIR_HOUSES_MAIL_SECURE &&
+    process.env.STAIR_HOUSES_MAIL_SECURE.toLowerCase() !== 'false') ||
+  false;
+const mailUseTLS =
+  (!!process.env.STAIR_HOUSES_MAIL_USE_TLS &&
+    process.env.STAIR_HOUSES_MAIL_USE_TLS.toLowerCase() !== 'false') ||
+  true;
+const mailUsername = process.env.STAIR_HOUSES_MAIL_USERNAME;
+const mailPassword = process.env.STAIR_HOUSES_MAIL_PASSWORD;
+const mailAddress = process.env.STAIR_HOUSES_MAIL_ADDRESS;
+
+const frontendPath = process.env.STAIR_HOUSES_FRONTEND_PATH ?? '/#';
+const frontendProtocol =
+  process.env.STAIR_HOUSES_FRONTEND_PROTOCOL ?? 'http://';
 
 // Connection URL
 const url =
@@ -37,6 +56,22 @@ const dbName = 'stairHouses';
 const pointsCollectionName = 'points';
 const pointEventsCollectionName = 'pointEvents';
 const settingsCollectionName = 'settings';
+const usersCollectionName = 'users';
+
+const base64Encode = (msg: string) => {
+  return Buffer.from(msg)
+    .toString('base64')
+    .replace(/\//g, '_')
+    .replace(/\+/g, '-')
+    .replace(/=/g, '~');
+};
+
+const base64Decode = (msg: string) => {
+  return Buffer.from(
+    msg.replace(/_/g, '/').replace(/-/g, '+').replace(/~/g, '='),
+    'base64'
+  ).toString('utf-8');
+};
 
 export interface Points {
   color: keyof typeof COLORS;
@@ -93,6 +128,21 @@ interface SubSetting extends BaseSetting {
   type: 'sub';
 }
 
+interface User {
+  email: string;
+  registerDate: Date;
+  name?: string;
+  hash?: string;
+  verifyHash?: string;
+  verifyExpiration?: Date;
+  verifyStay?: boolean;
+  resetHash?: string;
+  resetExpiration?: Date;
+  lastLogin?: Date;
+  verifyDate?: Date;
+  changedDate?: Date;
+}
+
 type Setting = StringSetting | NumberSetting | DateSetting | SubSetting;
 
 let connected = false;
@@ -108,6 +158,7 @@ let db: Db | undefined = undefined;
 let pointsCollection: Collection<Points> | undefined = undefined;
 let pointEventsCollection: Collection<PointEvent> | undefined = undefined;
 let settingsCollection: Collection<Setting> | undefined = undefined;
+let usersCollection: Collection<User> | undefined = undefined;
 
 const passwordTries: Record<string, number> = {};
 const passwordPreviousTimeOuts: Record<string, Date[]> = {};
@@ -163,6 +214,7 @@ export const ensureDBConnection = () => {
         pointEventsCollectionName
       );
       settingsCollection = db.collection<Setting>(settingsCollectionName);
+      usersCollection = db.collection<User>(usersCollectionName);
 
       const passwordObject = (await settingsCollection.findOne({
         key: 'password',
@@ -242,11 +294,17 @@ export const ensureNoDBConnection = (forGood = false) => {
   });
 };
 
-export const verifyPassword = async (
-  password: string,
+export const timeOutCaptchaAndResponse = async (
   ip: string,
-  captchaToken?: string
-): Promise<{ success: boolean; showCaptcha: boolean; nextTry: Date }> => {
+  captchaToken?: string,
+  action?: () => Promise<[boolean, boolean]>,
+  response?: boolean
+): Promise<{
+  success: boolean;
+  showCaptcha: boolean;
+  nextTry: Date;
+  admin: boolean;
+}> => {
   const timeOut = passwordTimeOuts[ip];
   let needsCaptcha = false;
   let previous = passwordPreviousTimeOuts[ip];
@@ -269,6 +327,7 @@ export const verifyPassword = async (
         success: false,
         showCaptcha: previousCount > 3,
         nextTry: timeOut,
+        admin: false,
       };
     } else {
       delete passwordTimeOuts[ip];
@@ -314,7 +373,12 @@ export const verifyPassword = async (
     passwordTimeOuts[ip] = nextTry;
     delete passwordTries[ip];
     previous.push(new Date());
-    return { success: false, showCaptcha: previousCount > 2, nextTry };
+    return {
+      success: false,
+      showCaptcha: previousCount > 2,
+      nextTry,
+      admin: false,
+    };
   } else if (
     passwordTries[ip] === 4 ||
     passwordTries[ip] === 7 ||
@@ -334,33 +398,30 @@ export const verifyPassword = async (
       } else {
         passwordFailedCaptcha[ip] = 1;
       }
-      return { success: false, showCaptcha: true, nextTry: new Date() };
+      return {
+        success: false,
+        showCaptcha: true,
+        nextTry: new Date(),
+        admin: false,
+      };
     } else {
       delete passwordFailedCaptcha[ip];
     }
   }
 
-  await ensureDBConnection();
-  settingsCollection = settingsCollection as Collection<Setting>;
-
-  const hashedPasswordObject = (await settingsCollection.findOne({
-    key: 'password',
-    type: 'string',
-  })) as StringSetting;
-  if (hashedPasswordObject) {
-    const result = await verify(hashedPasswordObject.value, password);
-    if (result) {
-      delete passwordTries[ip];
-      delete passwordFailedCaptcha[ip];
-      return {
-        success: true,
-        showCaptcha:
-          passwordTries[ip] === 3 ||
-          passwordTries[ip] === 6 ||
-          passwordTries[ip] === 8,
-        nextTry: new Date(),
-      };
-    }
+  const result = action ? await action() : [!!response, false];
+  if (result[0]) {
+    delete passwordTries[ip];
+    delete passwordFailedCaptcha[ip];
+    return {
+      success: true,
+      showCaptcha:
+        passwordTries[ip] === 3 ||
+        passwordTries[ip] === 6 ||
+        passwordTries[ip] === 8,
+      nextTry: new Date(),
+      admin: result[1],
+    };
   }
   return {
     success: false,
@@ -369,7 +430,371 @@ export const verifyPassword = async (
       passwordTries[ip] === 6 ||
       passwordTries[ip] === 8,
     nextTry: new Date(),
+    admin: false,
   };
+};
+
+const mailTransporter =
+  mailHostname && mailHostname && mailPassword && mailAddress
+    ? nodemailer.createTransport({
+        host: mailHostname,
+        port: mailPort,
+        secure: mailSecure,
+        requireTLS: mailUseTLS,
+        auth: {
+          user: mailUsername,
+          pass: mailPassword,
+        },
+        logger: true,
+      })
+    : null;
+
+export const sendMail = async (
+  to: string,
+  subject: string,
+  body: string,
+  html?: string
+) => {
+  if (mailTransporter) {
+    await mailTransporter.sendMail({
+      from: '"STAIR" <' + mailAddress + '>',
+      to,
+      subject,
+      text: body,
+      html,
+    });
+  } else {
+    console.log(
+      'Missing mail configuration, instead printing mail here for testing purposes'
+    );
+    console.log(
+      'Mail would have been sent to ' +
+        to +
+        ': ' +
+        subject +
+        '; ' +
+        body +
+        ' | ' +
+        html
+    );
+  }
+};
+
+export const changePasswordOrName = async (
+  email: string,
+  password: string,
+  newPassword?: string,
+  name?: string
+) => {
+  if (!newPassword && !name) {
+    return false;
+  }
+
+  if (!email || !email.endsWith('@stud.hslu.ch')) {
+    return false;
+  }
+
+  await ensureDBConnection();
+  usersCollection = usersCollection as Collection<User>;
+
+  const registeredUser = await usersCollection.findOne({ email });
+  if (!registeredUser || !registeredUser.hash) {
+    return false;
+  }
+
+  if (await verify(password, registeredUser.hash)) {
+    const passwordHashed = newPassword ? hash(newPassword) : '';
+
+    await usersCollection.updateOne(
+      {
+        email,
+      },
+      {
+        ...(passwordHashed ? { hash: passwordHashed } : {}),
+        ...(name ? { name } : {}),
+        $currentDate: { changedDate: true },
+      }
+    );
+    return email;
+  }
+
+  return false;
+};
+
+export const setPasswordOrName = async (
+  email: string,
+  code: string,
+  newPassword?: string,
+  name?: string
+) => {
+  if (!newPassword && !name) {
+    return false;
+  }
+
+  if (!email || !email.endsWith('@stud.hslu.ch')) {
+    return false;
+  }
+
+  await ensureDBConnection();
+  usersCollection = usersCollection as Collection<User>;
+
+  const registeredUser = await usersCollection.findOne({ email });
+  if (
+    !registeredUser ||
+    !registeredUser.resetHash ||
+    !registeredUser.resetExpiration
+  ) {
+    return false;
+  }
+
+  if (registeredUser.resetExpiration < new Date()) {
+    await usersCollection.updateOne(
+      {
+        email,
+      },
+      {
+        $unset: { resetHash: true, resetExpiration: true },
+      }
+    );
+    return false;
+  }
+
+  const codeDecoded = base64Decode(code);
+  if (codeDecoded && (await verify(codeDecoded, registeredUser.resetHash))) {
+    const passwordHashed = newPassword ? hash(newPassword) : '';
+
+    await usersCollection.updateOne(
+      {
+        email,
+      },
+      {
+        ...(passwordHashed ? { hash: passwordHashed } : {}),
+        ...(name ? { name } : {}),
+        $unset: { resetHash: true, resetExpiration: true },
+        $currentDate: { changedDate: true },
+      }
+    );
+    return email;
+  } else {
+    return false;
+  }
+};
+
+export const verifyUser = async (
+  emailEncoded: string,
+  code: string
+): Promise<[string | boolean, boolean]> => {
+  const email = base64Decode(emailEncoded);
+
+  if (!email || !email.endsWith('@stud.hslu.ch')) {
+    return [false, false];
+  }
+
+  await ensureDBConnection();
+  usersCollection = usersCollection as Collection<User>;
+
+  const registeredUser = await usersCollection.findOne({ email });
+  if (
+    !registeredUser ||
+    !registeredUser.verifyHash ||
+    !registeredUser.verifyExpiration
+  ) {
+    return [false, false];
+  }
+
+  if (registeredUser.verifyExpiration < new Date()) {
+    await usersCollection.updateOne(
+      {
+        email,
+      },
+      {
+        $unset: { verifyHash: true, verifyExpiration: true, verifyStay: true },
+      }
+    );
+    return [false, false];
+  }
+
+  const codeDecoded = base64Decode(code);
+  if (codeDecoded && (await verify(codeDecoded, registeredUser.verifyHash))) {
+    const passwordNew = makeId(15);
+    const passwordHashed = await hash(passwordNew);
+    await usersCollection.updateOne(
+      {
+        email,
+      },
+      {
+        resetHash: passwordHashed,
+        resetExpiration: new Date(Date.now() + 1000 * 60 * 30),
+        $unset: { verifyHash: true, verifyExpiration: true, verifyStay: true },
+        $currentDate: {
+          lastLogin: true,
+          ...(registeredUser.verifyDate ? {} : { verifyDate: true }),
+        },
+      }
+    );
+    return [email, !!registeredUser.verifyStay];
+  } else {
+    return [false, false];
+  }
+};
+
+export const createLoginLink = async (email: string, stay = false) => {
+  if (!email.endsWith('@stud.hslu.ch')) {
+    return false;
+  }
+
+  await ensureDBConnection();
+  usersCollection = usersCollection as Collection<User>;
+
+  const registeredUser = await usersCollection.findOne({ email });
+  if (!registeredUser) {
+    return false;
+  }
+
+  const passwordNew = makeId(15);
+  const passwordHashed = await hash(passwordNew);
+
+  const link = `${
+    frontendProtocol + frontendHost + frontendPath
+  }/link?email=${base64Encode(email)}&code=${base64Encode(passwordNew)}`;
+
+  await usersCollection.updateOne(
+    {
+      email,
+    },
+    {
+      verifyHash: passwordHashed,
+      verifyExpiration: new Date(Date.now() + 1000 * 60 * 30),
+      verifyStay: stay,
+      $currentDate: { lastChanged: true },
+    }
+  );
+
+  return link;
+};
+
+export const registerOrEmailLogin = async (
+  email: string,
+  ip: string,
+  captchaToken?: string,
+  stay = false,
+  isRegister = true
+) => {
+  if (!email.endsWith('@stud.hslu.ch')) {
+    return await timeOutCaptchaAndResponse(ip, captchaToken, undefined, false);
+  }
+
+  return await timeOutCaptchaAndResponse(ip, captchaToken, async () => {
+    await ensureDBConnection();
+    usersCollection = usersCollection as Collection<User>;
+
+    const registeredUser = await usersCollection.findOne({ email });
+    if (!!registeredUser?.verifyDate === isRegister) {
+      return [false, false];
+    }
+
+    const passwordNew = makeId(15);
+    const passwordHashed = await hash(passwordNew);
+    if (isRegister) {
+      await usersCollection.insertOne({
+        email,
+        verifyHash: passwordHashed,
+        verifyExpiration: new Date(Date.now() + 1000 * 60 * 60 * 24),
+        verifyStay: stay,
+        registerDate: new Date(),
+      });
+      await usersCollection.deleteMany({
+        email,
+        verifyExpiration: { $lte: new Date() },
+        $exists: { verifyHash: true, hash: false },
+      });
+    } else {
+      await usersCollection.updateOne(
+        {
+          email,
+        },
+        {
+          verifyHash: passwordHashed,
+          verifyExpiration: new Date(Date.now() + 1000 * 60 * 60),
+          verifyStay: stay,
+          $currentDate: { lastChanged: true },
+        }
+      );
+    }
+
+    const body = isRegister
+      ? `Welcome to the STAIR Houses website.
+
+  To confirm your account just press the following link within the next 24 hours: ${
+    frontendProtocol + frontendHost + frontendPath
+  }/verify?email=${base64Encode(email)}&code=${base64Encode(passwordNew)}
+
+  If you did not request this email, simply ignore it.`
+      : `Welcome back to the STAIR Houses website.
+
+  To log in just press the following link within the next hour: ${
+    frontendProtocol + frontendHost + frontendPath
+  }/link?email=${base64Encode(email)}&code=${base64Encode(passwordNew)}
+
+  If you did not request this email, simply ignore it.`;
+
+    await sendMail(
+      email,
+      'STAIR Houses ' + (isRegister ? 'Verification' : 'Login'),
+      body
+    );
+    return [true, false];
+  });
+};
+
+export const verifyPassword = async (
+  password: string,
+  ip: string,
+  captchaToken?: string
+) => {
+  return await timeOutCaptchaAndResponse(ip, captchaToken, async () => {
+    await ensureDBConnection();
+    settingsCollection = settingsCollection as Collection<Setting>;
+
+    const hashedPasswordObject = (await settingsCollection.findOne({
+      key: 'password',
+      type: 'string',
+    })) as StringSetting;
+    if (hashedPasswordObject) {
+      const result = await verify(hashedPasswordObject.value, password);
+      if (result) {
+        return [true, true];
+      }
+    }
+    return [false, false];
+  });
+};
+
+export const loginUser = async (
+  email: string,
+  password: string,
+  ip: string,
+  captchaToken?: string
+) => {
+  if (!email.endsWith('@stud.hslu.ch')) {
+    return await timeOutCaptchaAndResponse(ip, captchaToken, undefined, false);
+  }
+
+  return await timeOutCaptchaAndResponse(ip, captchaToken, async () => {
+    await ensureDBConnection();
+    usersCollection = usersCollection as Collection<User>;
+
+    const user = await usersCollection.findOne({
+      email,
+    });
+    if (user && user.hash) {
+      const result = await verify(user.hash, password);
+      if (result) {
+        return [true, false];
+      }
+    }
+    return [false, false];
+  });
 };
 
 export const getPoints = async () => {
