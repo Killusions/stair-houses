@@ -48,7 +48,8 @@ server.register(fp(fastifyTRPCPlugin), {
   trpcOptions: { router: appRouter, createContext },
 });
 
-const frontendHost = process.env.STAIR_HOUSES_FRONTEND_HOST ?? 'localhost';
+export const frontendHost =
+  process.env.STAIR_HOUSES_FRONTEND_HOST ?? 'localhost';
 
 server.register(fastifyCors, () => (req, callback) => {
   let corsOptions;

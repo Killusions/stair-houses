@@ -209,7 +209,6 @@ export const addPoints = async (
   try {
     if (!sessionId) {
       authFailure.next();
-      throw new Error('no sessionId');
     }
     const data = await client.mutation('addPoints', {
       color,
@@ -219,6 +218,10 @@ export const addPoints = async (
       owner: owner || undefined,
       reason: reason || undefined,
     });
+    if (!data) {
+      authFailure.next();
+      return;
+    }
     if (isDataNewer(data)) {
       points = data;
       const displayData = processData(points);
@@ -226,13 +229,8 @@ export const addPoints = async (
     }
     return dataSubject.value;
   } catch (e: unknown) {
-    if (e instanceof Error && e.message === 'Incorrect sessionId') {
-      authFailure.next();
-      throw e;
-    } else {
-      console.error(e);
-      throw e;
-    }
+    console.error(e);
+    throw e;
   }
 };
 
