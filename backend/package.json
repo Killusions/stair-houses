@@ -2,6 +2,7 @@
   "name": "stair-houses",
   "version": "1.0.0",
   "main": "dist/index.js",
+  "type": "module",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
@@ -36,6 +37,7 @@
   "dependencies": {
     "@trpc/server": "^9.20.3",
     "argon2": "^0.28.5",
+    "crypto-random-string": "^4.0.0",
     "dotenv": "^16.0.0",
     "fastify": "^3.27.4",
     "fastify-cors": "^6.0.3",

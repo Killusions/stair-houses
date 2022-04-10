@@ -3,14 +3,10 @@ import ws from 'fastify-websocket'
 import fastifyCors from 'fastify-cors'
 import fp from 'fastify-plugin'
 import fs from 'fs'
-import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify'
-import { createContext } from './context'
-import { appRouter } from './router'
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const dotenv = require('dotenv')
-
-dotenv.config()
+import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify/dist/trpc-server-adapters-fastify.cjs.js'
+import { createContext } from './context.js'
+import { appRouter } from './router.js'
+import 'dotenv/config'
 
 export const captchaSecret = process.env.STAIR_HOUSES_CAPTCHA_SECRET ?? ''
 

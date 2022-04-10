@@ -1,13 +1,13 @@
 import * as trpc from '@trpc/server'
 import { z } from 'zod'
-import { COLORS, REFRESH_INTERVAL } from './constants'
+import { COLORS, REFRESH_INTERVAL } from './constants.js'
 import {
   addPoints,
   getPointsWithStats,
   makeId,
   Points,
   verifyPassword,
-} from './data'
+} from './data.js'
 
 import { Subject } from 'rxjs'
 

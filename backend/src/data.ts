@@ -1,8 +1,9 @@
 import { Collection, Db, MongoClient } from 'mongodb'
-import { COLORS } from './constants'
+import { COLORS } from './constants.js'
 import { hash, verify } from 'argon2'
 import hCaptcha from 'hcaptcha'
-import { captchaSecret } from '.'
+import cryptoRandomString from 'crypto-random-string'
+import { captchaSecret } from './index.js'
 
 const rawHost = process.env.STAIR_HOUSES_DATABASE_HOST
 const host = rawHost ? encodeURIComponent(rawHost) : 'localhost'
@@ -114,14 +115,7 @@ const passwordTimeOuts: Record<string, Date> = {}
 const passwordFailedCaptcha: Record<string, number> = {}
 
 export const makeId = (length: number) => {
-  let result = ''
-  const characters =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  const charactersLength = characters.length
-  for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength))
-  }
-  return result
+  return cryptoRandomString({ length, type: 'alphanumeric' })
 }
 
 export const ensureDBConnection = () => {
