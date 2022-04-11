@@ -2,7 +2,7 @@ import type { AppRouter } from '../../backend/src/router';
 import { createWSClient, wsLink } from '@trpc/client/links/wsLink';
 import { createTRPCClient } from '@trpc/client';
 import { COLORS } from './constants';
-import type { PointsCategory, PointsWithStats } from '../../backend/src/data';
+import type { PointsCategory, PointsWithStats } from '../../backend/src/model';
 import { BehaviorSubject, Subject } from 'rxjs';
 
 const protocol = import.meta.env.VITE_STAIR_HOUSES_PROTOCOL ?? 'ws';
@@ -209,7 +209,6 @@ export const addPoints = async (
   try {
     if (!sessionId) {
       authFailure.next();
-      throw new Error('no sessionId');
     }
     const data = await client.mutation('addPoints', {
       color,
@@ -219,6 +218,10 @@ export const addPoints = async (
       owner: owner || undefined,
       reason: reason || undefined,
     });
+    if (!data) {
+      authFailure.next();
+      return;
+    }
     if (isDataNewer(data)) {
       points = data;
       const displayData = processData(points);
@@ -226,13 +229,8 @@ export const addPoints = async (
     }
     return dataSubject.value;
   } catch (e: unknown) {
-    if (e instanceof Error && e.message === 'Incorrect sessionId') {
-      authFailure.next();
-      throw e;
-    } else {
-      console.error(e);
-      throw e;
-    }
+    console.error(e);
+    throw e;
   }
 };
 
@@ -260,28 +258,38 @@ export const subscribePoints = () => {
 };
 
 export const logIn = async (password: string, captchaToken?: string) => {
-  const result = await client.mutation('login', { password, captchaToken });
-  if (result.sessionId) {
-    sessionId = result.sessionId;
-  } else {
-    sessionId = '';
+  try {
+    const result = await client.mutation('login', { password, captchaToken });
+    if (result.success && result.sessionId) {
+      sessionId = result.sessionId;
+    } else {
+      sessionId = '';
+    }
+    sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5;
+    if (sessionId) {
+      localStorage.setItem('session', sessionId);
+      localStorage.setItem('sessionExpires', sessionExpires.toString());
+    }
+    return {
+      success: !!sessionId,
+      showCaptcha: result.showCaptcha,
+      nextTry: new Date(result.nextTry),
+    };
+  } catch (e) {
+    console.error(e);
+    throw e;
   }
-  sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5;
-  if (sessionId) {
-    localStorage.setItem('session', sessionId);
-    localStorage.setItem('sessionExpires', sessionExpires.toString());
-  }
-  return {
-    success: !!sessionId,
-    showCaptcha: result.showCaptcha,
-    nextTry: new Date(result.nextTry),
-  };
 };
 
 export const logOut = async () => {
-  await client.mutation('logout', { sessionId });
-  sessionId = '';
-  sessionExpires = 0;
-  localStorage.setItem('session', '');
-  localStorage.setItem('sessionExpires', '');
+  try {
+    await client.mutation('logout', { sessionId });
+    sessionId = '';
+    sessionExpires = 0;
+    localStorage.setItem('session', '');
+    localStorage.setItem('sessionExpires', '');
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
 };

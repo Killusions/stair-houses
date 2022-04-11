@@ -46,7 +46,7 @@
         showCaptcha.value = result.showCaptcha;
       }
     } catch (e) {
-      console.error(e);
+      throw e;
     }
   };
 

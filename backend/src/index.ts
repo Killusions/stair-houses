@@ -8,14 +8,6 @@ import { createContext } from './context.js';
 import { appRouter } from './router.js';
 import 'dotenv/config';
 
-export const captchaSecret = process.env.STAIR_HOUSES_CAPTCHA_SECRET ?? '';
-
-console.log('starting');
-
-if (!captchaSecret) {
-  console.log('Captcha not configured, allowing requests without captcha.');
-}
-
 const cert = process.env.STAIR_HOUSES_SSL_CERT ?? '';
 const key = process.env.STAIR_HOUSES_SSL_KEY ?? '';
 
@@ -48,7 +40,8 @@ server.register(fp(fastifyTRPCPlugin), {
   trpcOptions: { router: appRouter, createContext },
 });
 
-const frontendHost = process.env.STAIR_HOUSES_FRONTEND_HOST ?? 'localhost';
+export const frontendHost =
+  process.env.STAIR_HOUSES_FRONTEND_HOST ?? 'localhost';
 
 server.register(fastifyCors, () => (req, callback) => {
   let corsOptions;
