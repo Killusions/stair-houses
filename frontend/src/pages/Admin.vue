@@ -2,20 +2,16 @@
   import Panel from '../components/Panel.vue';
   import Houses from '../components/Houses.vue';
   import Ranking from '../components/Ranking.vue';
-  import { ranking, secret } from '../settings';
+  import { ranking } from '../settings';
   import { useRouter } from 'vue-router';
-  import { authFailure, hasSessionId } from '../data';
+  import { authFailure, checkSession } from '../data';
   const router = useRouter();
 
   authFailure.subscribe(() => {
     router.push('/login');
   });
 
-  if (!hasSessionId()) {
-    router.push('/login');
-  } else {
-    secret.value = true;
-  }
+  checkSession();
 </script>
 
 <template>

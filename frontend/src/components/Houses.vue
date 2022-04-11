@@ -15,7 +15,8 @@
 
   const displayData: BehaviorSubject<DisplayData> = subscribePoints();
 
-  const showColors = ref(true);
+  let houseAnimations = ref(false);
+  let firstNonZero = true;
 
   let updated = false;
   const updatedSubject = new ReplaySubject<void>();
@@ -49,53 +50,42 @@
     }
   });
 
-  let first = true;
+  const fullyDisplayData = () => {
+    displayActualData.value.forEach((actualData) => {
+      actualData.currentPercentage = actualData.relativePercentage;
+      actualData.currentColor = actualData.color;
+    });
+    setTimeout(() => (houseAnimations.value = false), 300);
+  };
+
+  const waitDisplayData = () => {
+    setTimeout(() => {
+      if (firstNonZero) {
+        firstNonZero = false;
+        displayActualData.value.forEach((actualData) => {
+          actualData.currentColor = actualData.color;
+        });
+      } else {
+        houseAnimations.value = true;
+      }
+    });
+    setTimeout(fullyDisplayData, 10);
+  };
+
+  const animateDisplayData = () => {
+    if (updated) {
+      waitDisplayData();
+    } else {
+      updatedSubject.subscribe(() => waitDisplayData());
+    }
+  };
 
   const displayActualData = ref(displayData.value);
-  if (displayActualData.value !== zeroData) {
-    if (updated) {
-      setTimeout(() => {
-        displayActualData.value.forEach(
-          (actualData) =>
-            (actualData.currentPercentage = actualData.relativePercentage)
-        );
-      });
-    } else {
-      updatedSubject.subscribe(() => {
-        setTimeout(() => {
-          displayActualData.value.forEach(
-            (actualData) =>
-              (actualData.currentPercentage = actualData.relativePercentage)
-          );
-        });
-      });
-    }
-  }
 
   displayData.subscribe((data) => {
     displayActualData.value = data;
-    if (updated) {
-      if (!first) {
-        showColors.value = false;
-      }
-      setTimeout(() => {
-        showColors.value = true;
-        displayActualData.value.forEach(
-          (actualData) =>
-            (actualData.currentPercentage = actualData.relativePercentage)
-        );
-      });
-    } else {
-      updatedSubject.subscribe(() => {
-        setTimeout(() => {
-          showColors.value = true;
-          displayActualData.value.forEach(
-            (actualData) =>
-              (actualData.currentPercentage = actualData.relativePercentage)
-          );
-        });
-      });
-      first = false;
+    if (data !== zeroData) {
+      animateDisplayData();
     }
   });
 
@@ -117,7 +107,7 @@
           typeof settings.value.amount !== 'number'
         ) {
           if (!displayErrorMessage.value) {
-            setTimeout(() => (displayErrorMessage.value = true));
+            setTimeout(() => (displayErrorMessage.value = true), 10);
           }
           errorMessage.value = 'Please enter a valid amount.';
         } else if (
@@ -125,7 +115,7 @@
           isNaN(moment(settings.value.date).toDate().getTime())
         ) {
           if (!displayErrorMessage.value) {
-            setTimeout(() => (displayErrorMessage.value = true));
+            setTimeout(() => (displayErrorMessage.value = true), 10);
           }
           errorMessage.value = 'Please enter a valid date.';
         } else if (
@@ -135,14 +125,14 @@
             pressedColor.value !== color)
         ) {
           if (!displayErrorMessage.value) {
-            setTimeout(() => (displayErrorMessage.value = true));
+            setTimeout(() => (displayErrorMessage.value = true), 10);
           }
           errorMessage.value =
             'Please enter a reason. Press again to send anyway.';
         } else {
           if (displayErrorMessage.value) {
             displayErrorMessage.value = false;
-            setTimeout(() => (errorMessage.value = ''));
+            setTimeout(() => (errorMessage.value = ''), 300);
           }
           await addPoints(
             color,
@@ -189,7 +179,9 @@
       :key="data.color"
       class="house"
       :class="{
-        [data.color]: showColors,
+        [data.previousColor]: true,
+        [data.currentColor + '-force']: true,
+        animation: houseAnimations,
         clickable: !!allowEdit,
         ['house-' + (index + 1)]: true,
       }"
@@ -318,7 +310,7 @@
     border: 0.025rem solid rgba(0, 0, 0, 0.5);
     border-radius: 1rem;
     box-shadow: 0 1rem 1rem rgba(0, 0, 0, 0.3);
-    transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    transition: transform 0.2s ease-in-out;
     overflow: visible;
 
     &.house-1,
@@ -327,6 +319,34 @@
       .categories-wrapper .categories-inner-wrapper {
         max-height: 5.5rem;
       }
+    }
+
+    &.animation {
+      transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    }
+
+    &.red-force {
+      background-color: #ab0200;
+    }
+
+    &.blue-force {
+      background-color: #166cc2;
+    }
+
+    &.purple-force {
+      background-color: #420082;
+    }
+
+    &.grey-force {
+      background-color: #808184;
+    }
+
+    &.orange-force {
+      background-color: #ff6228;
+    }
+
+    &.yellow-force {
+      background-color: #f6aa00;
     }
 
     &.clickable {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { useRouter } from 'vue-router';
-  import { authFailure, logIn } from '../data';
+  import { logIn } from '../data';
   import { ref } from 'vue';
   import moment from 'moment';
   import Captcha from '../components/Captcha.vue';
@@ -57,10 +57,6 @@
   const captchaExpired = () => {
     captchaToken = '';
   };
-
-  authFailure.subscribe(() => {
-    router.push('/login');
-  });
 </script>
 
 <template>

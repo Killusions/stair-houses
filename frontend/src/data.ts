@@ -31,6 +31,8 @@ let points: PointsWithStats[] = Object.keys(COLORS).map((item) => ({
 export interface DisplayColor {
   color: string;
   colorString: string;
+  currentColor: string;
+  previousColor: string;
   points: number;
   relativePercentage: number;
   currentPercentage: number;
@@ -149,9 +151,15 @@ const processData = (data: PointsWithStats[], zero = false): DisplayData => {
     } else if (lastString && lastString === previousPlaceString) {
       badgeClass = 'last';
     }
+
+    const previousColor = zero
+      ? item.color
+      : dataSubject.value[index]?.color ?? item.color;
     const returnObject: DisplayColor = {
       color: item.color,
       colorString: item.color.charAt(0).toUpperCase() + item.color.slice(1),
+      currentColor: previousColor,
+      previousColor,
       points: item.points,
       relativePercentage: item.relative * 100,
       currentPercentage: zero
@@ -207,7 +215,7 @@ export const addPoints = async (
   reason?: string
 ) => {
   try {
-    if (!sessionId) {
+    if (!hasSessionId()) {
       authFailure.next();
     }
     const data = await client.mutation('addPoints', {
@@ -232,6 +240,25 @@ export const addPoints = async (
     console.error(e);
     throw e;
   }
+};
+
+export const checkSession = () => {
+  (async () => {
+    try {
+      if (!hasSessionId()) {
+        authFailure.next();
+      }
+      const data = await client.mutation('checkSession', {
+        sessionId: sessionId,
+      });
+      if (!data) {
+        authFailure.next();
+      }
+    } catch (e: unknown) {
+      console.error(e);
+      throw e;
+    }
+  })();
 };
 
 export const subscribePoints = () => {
@@ -271,7 +298,7 @@ export const logIn = async (password: string, captchaToken?: string) => {
       localStorage.setItem('sessionExpires', sessionExpires.toString());
     }
     return {
-      success: !!sessionId,
+      success: result.success,
       showCaptcha: result.showCaptcha,
       nextTry: new Date(result.nextTry),
     };
