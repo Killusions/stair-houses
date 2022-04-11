@@ -10,8 +10,8 @@
     }
   };
 
-  const mailToPr = () => {
-    location.href = 'mailto:pr@stair.ch?&subject=STAIR Houses Website';
+  const mailToUs = () => {
+    location.href = 'mailto:info@stair.ch?&subject=STAIR Houses Website';
   };
 </script>
 
@@ -36,7 +36,7 @@
       @click="logOutOnclick()"
       >Log out</router-link
     >
-    <a class="contact footer-item" @click="mailToPr()">Contact</a>
+    <a class="contact footer-item" @click="mailToUs()">Contact</a>
   </div>
 </template>
 
