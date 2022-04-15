@@ -1,6 +1,6 @@
 import { Collection, Db, MongoClient } from 'mongodb';
 import { COLORS } from './constants.js';
-import { makeId } from './helpers.js';
+import { makeId } from './id.js';
 import type { PointEvent, Points, Setting, StringSetting, User } from './model';
 import { hashPassword } from './users.js';
 

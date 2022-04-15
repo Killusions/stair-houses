@@ -2,7 +2,8 @@ import { hash, verify } from 'argon2';
 import { frontendHost } from './index.js';
 import type { StringSetting } from './model';
 import { getSettingsCollection, getUsersCollection } from './data.js';
-import { base64Decode, base64Encode, makeId } from './helpers.js';
+import { makeId } from './id.js';
+import { base64Decode, base64Encode } from './base64.js';
 import { sendMail } from './mailer.js';
 import { timeOutCaptchaAndResponse } from './spamPrevention.js';
 import { EMAIL_ENDING } from './constants.js';
@@ -277,7 +278,7 @@ export const registerOrEmailLogin = async (
 
   To confirm your account just press the following link within the next 24 hours: ${
     frontendProtocol + frontendHost + frontendPath
-  }/verifyPassword?email=${base64Encode(email)}&code=${base64Encode(
+  }/login?register=true&email=${base64Encode(email)}&code=${base64Encode(
           passwordNew
         )}
 
@@ -286,7 +287,7 @@ export const registerOrEmailLogin = async (
 
   To log in just press the following link within the next hour: ${
     frontendProtocol + frontendHost + frontendPath
-  }/link?email=${base64Encode(email)}&code=${base64Encode(passwordNew)}
+  }/login?email=${base64Encode(email)}&code=${base64Encode(passwordNew)}
 
   If you did not request this email, simply ignore it.`;
 

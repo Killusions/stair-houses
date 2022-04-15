@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { logOut } from '../data';
+  import { logOut, hasSession } from '../data';
 
   const logOutOnclick = async () => {
     try {
@@ -22,16 +22,23 @@
     <router-link
       v-if="
         $router.currentRoute.value.path !== '/admin' &&
+        $router.currentRoute.value.path !== '/user' &&
         $router.currentRoute.value.path !== '/login'
       "
-      to="/admin"
-      class="admin-link footer-item"
-      >Admin-Panel</router-link
+      :to="hasSession() ? (hasSession(true) ? '/admin' : '/user') : '/login'"
+      class="action-link footer-item"
+      >{{
+        hasSession()
+          ? hasSession(true)
+            ? 'Admin panel'
+            : 'User panel'
+          : 'Log in'
+      }}</router-link
     >
     <router-link
-      v-if="$router.currentRoute.value.path === '/admin'"
+      v-else-if="$router.currentRoute.value.path !== '/login'"
       to="/"
-      class="admin-link footer-item"
+      class="action-link footer-item"
       @click="logOutOnclick()"
       >Log out</router-link
     >
@@ -45,7 +52,7 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: flex-end;
-    height: 3%;
+    height: 3vh;
   }
 
   .footer-item {
@@ -67,7 +74,7 @@
     text-align: left;
   }
 
-  .admin-link {
+  .action-link {
     text-align: center;
   }
 

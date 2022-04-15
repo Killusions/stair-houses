@@ -1,5 +1,3 @@
-import cryptoRandomString from 'crypto-random-string';
-
 export const base64Encode = (msg: string) => {
   return Buffer.from(msg)
     .toString('base64')
@@ -13,8 +11,4 @@ export const base64Decode = (msg: string) => {
     msg.replace(/_/g, '/').replace(/-/g, '+').replace(/~/g, '='),
     'base64'
   ).toString('utf-8');
-};
-
-export const makeId = (length: number) => {
-  return cryptoRandomString({ length, type: 'alphanumeric' });
 };

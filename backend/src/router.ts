@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { COLORS, REFRESH_INTERVAL } from './constants.js';
 import { Subject } from 'rxjs';
 import type { PointsWithStats } from './model';
-import { makeId } from './helpers.js';
+import { makeId } from './id.js';
 import { addPoints, getPointsWithStats } from './points.js';
 import {
   changePasswordOrName,
@@ -404,7 +404,7 @@ export const appRouter = trpc
     resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        return verifySession(input.sessionId, ip, undefined, true);
+        return verifySession(input.sessionId, ip, undefined, input.admin);
       } catch (e: unknown) {
         throw internalServerError(e);
       }

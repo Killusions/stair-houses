@@ -58,9 +58,12 @@ let sessionExpires =
   parseInt(localStorage.getItem('sessionExpires') ?? '') ?? 0;
 
 let sessionId = localStorage.getItem('session') ?? '';
+let isAdmin = localStorage.getItem('admin') === 'true';
 
-export const hasSessionId = () => {
-  return !!sessionId && sessionExpires > new Date().getTime();
+export const hasSession = (admin = false) => {
+  return (
+    !!sessionId && sessionExpires > new Date().getTime() && (!admin || isAdmin)
+  );
 };
 
 const processData = (data: PointsWithStats[], zero = false): DisplayData => {
@@ -215,7 +218,7 @@ export const addPoints = async (
   reason?: string
 ) => {
   try {
-    if (!hasSessionId()) {
+    if (!hasSession(true)) {
       authFailure.next();
     }
     const data = await client.mutation('addPoints', {
@@ -242,14 +245,15 @@ export const addPoints = async (
   }
 };
 
-export const checkSession = () => {
+export const checkSession = (admin = false) => {
   (async () => {
     try {
-      if (!hasSessionId()) {
+      if (!hasSession(admin)) {
         authFailure.next();
       }
       const data = await client.mutation('checkSession', {
         sessionId: sessionId,
+        admin: admin || undefined,
       });
       if (!data) {
         authFailure.next();
@@ -284,13 +288,51 @@ export const subscribePoints = () => {
   return dataSubject;
 };
 
-export const logIn = async (password: string, captchaToken?: string) => {
+export const register = async (email: string, captchaToken?: string) => {
   try {
-    const result = await client.mutation('login', { password, captchaToken });
+    const result = await client.mutation('register', { email, captchaToken });
+    return {
+      success: result.success,
+      showCaptcha: result.showCaptcha,
+      nextTry: new Date(result.nextTry),
+    };
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const emailLogIn = async (email: string, captchaToken?: string) => {
+  try {
+    const result = await client.mutation('emailLogin', { email, captchaToken });
+    return {
+      success: result.success,
+      showCaptcha: result.showCaptcha,
+      nextTry: new Date(result.nextTry),
+    };
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const logIn = async (
+  password: string,
+  email?: string,
+  captchaToken?: string
+) => {
+  try {
+    const result = await client.mutation('login', {
+      password,
+      email,
+      captchaToken,
+    });
     if (result.success && result.sessionId) {
       sessionId = result.sessionId;
+      isAdmin = !!result.admin;
     } else {
       sessionId = '';
+      isAdmin = false;
     }
     sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5;
     if (sessionId) {
@@ -299,6 +341,7 @@ export const logIn = async (password: string, captchaToken?: string) => {
     }
     return {
       success: result.success,
+      admin: result.admin,
       showCaptcha: result.showCaptcha,
       nextTry: new Date(result.nextTry),
     };
@@ -312,6 +355,7 @@ export const logOut = async () => {
   try {
     await client.mutation('logout', { sessionId });
     sessionId = '';
+    isAdmin = false;
     sessionExpires = 0;
     localStorage.setItem('session', '');
     localStorage.setItem('sessionExpires', '');

@@ -20,7 +20,7 @@
     flex-direction: row;
     align-items: flex-end;
     justify-content: space-between;
-    height: 12%;
+    height: 12vh;
   }
 
   .header-container {

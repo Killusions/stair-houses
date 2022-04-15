@@ -5,6 +5,8 @@
 </script>
 
 <template>
-  <Ranking v-if="ranking" :allow-edit="false"> </Ranking>
-  <Houses v-else :allow-edit="false"> </Houses>
+  <div class="page">
+    <Ranking v-if="ranking" :allow-edit="false"> </Ranking>
+    <Houses v-else :allow-edit="false"> </Houses>
+  </div>
 </template>

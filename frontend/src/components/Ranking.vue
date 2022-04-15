@@ -48,7 +48,7 @@
   .ranking {
     position: relative;
     width: calc(100% - 2rem);
-    height: calc(85% - 2rem);
+    height: calc(85vh - 2rem);
     padding: 1rem;
     margin: 0;
     border: none;

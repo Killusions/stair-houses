@@ -2,7 +2,7 @@
   import { BehaviorSubject, ReplaySubject } from 'rxjs';
   import { onUpdated, ref } from 'vue';
   import moment from 'moment';
-  import { secret, settings } from '../settings';
+  import { loading, secret, settings } from '../settings';
   import {
     addPoints,
     DisplayData,
@@ -83,6 +83,7 @@
   const displayActualData = ref(displayData.value);
 
   displayData.subscribe((data) => {
+    loading.value = false;
     displayActualData.value = data;
     if (data !== zeroData) {
       animateDisplayData();
@@ -252,7 +253,7 @@
     grid-template-rows: 1fr 1fr;
     grid-template-columns: 1fr 1fr 1fr;
     width: calc(100% - 1rem);
-    height: calc(85% - 1rem);
+    height: calc(85vh - 1rem);
     padding: 0.5rem;
     margin: 0;
     border: none;
@@ -294,7 +295,7 @@
     }
 
     &.small {
-      height: calc(70% - 1rem);
+      height: calc(70vh - 1rem);
     }
   }
 
@@ -375,10 +376,10 @@
 
   @media (max-aspect-ratio: 1/1) {
     .content {
-      height: calc(100% - 15vw - 1rem);
+      height: calc(100vh - 15vw - 1rem);
 
       &.small {
-        height: calc(100% - 28vw - 1rem);
+        height: calc(100vh - 28vw - 1rem);
       }
     }
   }
