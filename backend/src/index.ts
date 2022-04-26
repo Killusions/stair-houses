@@ -42,6 +42,7 @@ server.register(fp(fastifyTRPCPlugin), {
 
 export const frontendHost =
   process.env.STAIR_HOUSES_FRONTEND_HOST ?? 'localhost';
+export const frontendPort = process.env.STAIR_HOUSES_FRONTEND_PORT ?? '3000';
 
 server.register(fastifyCors, () => (req, callback) => {
   let corsOptions;
