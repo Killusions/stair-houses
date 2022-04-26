@@ -59,13 +59,16 @@
     justify-content: space-between;
     align-items: flex-end;
     height: 3vh;
+    height: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
   }
 
   .footer-item {
     padding: 0.5% 1rem;
     font-weight: bold;
     font-size: 2vh;
+    font-size: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
     line-height: 3vh;
+    line-height: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
     color: unset;
     text-decoration: none;
   }

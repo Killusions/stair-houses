@@ -96,6 +96,7 @@
     flex-direction: row;
     width: calc(100% - 1rem);
     height: calc(15vh - 1rem);
+    height: calc((15 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
     padding: 0.5rem;
     margin: 0;
     border: none;
@@ -106,15 +107,19 @@
       width: 25%;
       padding: 0.5rem;
       font-size: 3vh;
+      font-size: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
       line-height: 3vh;
+      line-height: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
 
       label {
         margin-left: 0.5vh;
+        margin-left: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
         font-weight: bold;
       }
 
       > * {
         margin-top: 1vh;
+        margin-top: calc((1 * (100vh - var(--vh-offset, 0px)) / 100));
       }
 
       > *:first-child {
@@ -123,18 +128,29 @@
 
       input {
         height: 2vh;
+        height: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
         font-size: 2vh;
+        font-size: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
         line-height: 2vh;
+        line-height: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
         width: 90%;
         padding: 0.5vh;
+        padding: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
         margin: 0.5vh;
+        margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
         margin-top: 1.5vh;
+        margin-top: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
         border: solid 0.2vh rgb(179, 179, 179);
+        border: solid calc((0.2 * (100vh - var(--vh-offset, 0px)) / 100))
+          rgb(179, 179, 179);
         border-radius: 2vh;
+        border-radius: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
         box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
 
         &.warning {
           border: solid 0.3vh rgb(194, 0, 0);
+          border: solid calc((0.3 * (100vh - var(--vh-offset, 0px)) / 100))
+            rgb(194, 0, 0);
         }
 
         &#date {
@@ -145,7 +161,9 @@
 
       .date-inner-container {
         margin: 0.5vh;
+        margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
         margin-top: 1.5vh;
+        margin-top: calc((1.5 * (100vh - var(--vh-offset, 0px)) / 100));
         padding: 0;
         border: none;
       }
@@ -156,17 +174,26 @@
 
         label {
           font-size: 2.5vh;
+          font-size: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
           line-height: 2.5vh;
+          line-height: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
           margin-top: 0.5vh;
+          margin-top: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
           font-weight: normal;
         }
 
         input {
           height: 2.5vh;
+          height: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
           width: 2.5vh;
+          width: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
           padding: 0.5vh;
+          padding: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
           margin: 0.5vh;
+          margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
           border: solid 0.2vh rgb(179, 179, 179);
+          border: solid calc((0.2 * (100vh - var(--vh-offset, 0px)) / 100))
+            rgb(179, 179, 179);
           box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
         }
       }
