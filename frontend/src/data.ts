@@ -1,9 +1,15 @@
 import type { AppRouter } from '../../backend/src/router';
 import { createWSClient, wsLink } from '@trpc/client/links/wsLink';
 import { createTRPCClient } from '@trpc/client';
-import { COLORS } from './constants';
-import type { PointsCategory, PointsWithStats } from '../../backend/src/model';
+import type {
+  PointsCategory,
+  PointsWithStats,
+  UserInfoPrivate,
+} from '../../backend/src/model';
 import { BehaviorSubject, Subject } from 'rxjs';
+import superjson from 'superjson';
+import { COLORS } from '../../backend/src/constants';
+import type { DisplayColor, DisplayData } from './model';
 
 const protocol = import.meta.env.VITE_STAIR_HOUSES_PROTOCOL ?? 'ws';
 const host = import.meta.env.VITE_STAIR_HOUSES_BACKEND_HOST ?? 'localhost';
@@ -19,7 +25,82 @@ const client = createTRPCClient<AppRouter>({
       client: wsClient,
     }),
   ],
+  transformer: superjson,
 });
+
+let loggingOut = false;
+let sessionExpires =
+  parseInt(localStorage.getItem('sessionExpires') ?? '') ?? 0;
+let sessionId = localStorage.getItem('session') ?? '';
+let isAdmin = localStorage.getItem('admin') === 'true';
+let sessionUserId = localStorage.getItem('sessionUserId') ?? '';
+let infosSet = !!localStorage.getItem('infosSet') ?? false;
+let houseConfirmed =
+  (localStorage.getItem('houseConfirmed') as keyof typeof COLORS | undefined) ||
+  undefined;
+let current = !!localStorage.getItem('current') ?? false;
+
+let setCode = '';
+let setExpired = 0;
+
+let userInfo: UserInfoPrivate | null = null;
+
+export const isLoggingOut = () => {
+  return loggingOut;
+};
+
+export const hasSession = (admin = false) => {
+  return !!sessionId && sessionExpires > Date.now() && (!admin || isAdmin);
+};
+
+export const hasConfirmedCurrentUserSession = () => {
+  return hasConfirmedUserSession() && current;
+};
+
+export const hasConfirmedUserSession = () => {
+  return hasSetUserSession() && houseConfirmed;
+};
+
+export const hasSetUserSession = () => {
+  return hasUserSession() && infosSet;
+};
+
+export const hasUserSession = () => {
+  return hasSession() && !isAdmin;
+};
+
+export const hasSetCode = () => {
+  return !!setCode && setExpired > Date.now();
+};
+
+export const checkHasSetCode = async () => {
+  if (!hasSetCode()) {
+    await logOut();
+    authFailure.next();
+    return false;
+  }
+  return true;
+};
+
+export const clearSetCode = () => {
+  setCode = '';
+  setExpired = 0;
+};
+
+export const authFailure = new Subject<void>();
+
+authFailure.subscribe(() => {
+  clearAll();
+});
+
+const clearAll = () => {
+  clearSetCode();
+  clearUserInfo();
+};
+
+const clearUserInfo = () => {
+  userInfo = null;
+};
 
 let points: PointsWithStats[] = Object.keys(COLORS).map((item) => ({
   color: item as keyof typeof COLORS,
@@ -27,21 +108,6 @@ let points: PointsWithStats[] = Object.keys(COLORS).map((item) => ({
   lastChanged: new Date(0),
   categories: [],
 }));
-
-export interface DisplayColor {
-  color: string;
-  colorString: string;
-  currentColor: string;
-  previousColor: string;
-  points: number;
-  relativePercentage: number;
-  currentPercentage: number;
-  badgeString: string;
-  badgeClass?: string;
-  categories: PointsCategory[];
-}
-
-export type DisplayData = DisplayColor[];
 
 const placesStrings = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
 
@@ -53,22 +119,6 @@ const maxGrowScale = 1.5;
 let previousMaxIndex = 0;
 
 const randomOrder: { [key: string]: number } = {};
-
-let sessionExpires =
-  parseInt(localStorage.getItem('sessionExpires') ?? '') ?? 0;
-let sessionEmail = localStorage.getItem('sessionEmail') ?? '';
-let sessionId = localStorage.getItem('session') ?? '';
-let isAdmin = localStorage.getItem('admin') === 'true';
-
-export const hasSession = (admin = false) => {
-  return (
-    !!sessionId && sessionExpires > new Date().getTime() && (!admin || isAdmin)
-  );
-};
-
-export const hasModifiableSession = () => {
-  return hasSession() && sessionEmail;
-};
 
 const processData = (data: PointsWithStats[], zero = false): DisplayData => {
   const highestPoints = Math.max(...data.map((item) => item.points));
@@ -187,8 +237,6 @@ export const zeroData = processData(points, true);
 
 const dataSubject = new BehaviorSubject(zeroData);
 
-export const authFailure = new Subject<void>();
-
 export const inLogin = new Subject<boolean>();
 
 const getLatestTimestamp = (data: PointsWithStats[]) => {
@@ -229,6 +277,7 @@ export const addPoints = async (
       color,
       number,
       sessionId: sessionId,
+      userId: sessionUserId,
       date: date ? date.getTime() : undefined,
       owner: owner || undefined,
       reason: reason || undefined,
@@ -247,36 +296,6 @@ export const addPoints = async (
     console.error(e);
     throw e;
   }
-};
-
-export const checkSession = (admin = false) => {
-  (async () => {
-    try {
-      if (!hasSession(admin)) {
-        authFailure.next();
-        return;
-      }
-      const data = await client.mutation('checkSession', {
-        sessionId: sessionId,
-        email: sessionEmail || undefined,
-        admin: admin || isAdmin || undefined,
-      });
-      if (!data) {
-        sessionId = '';
-        sessionEmail = '';
-        isAdmin = false;
-        sessionExpires = 0;
-        localStorage.setItem('session', '');
-        localStorage.setItem('sessionEmail', '');
-        localStorage.setItem('sessionExpires', '');
-        localStorage.setItem('admin', '');
-        authFailure.next();
-      }
-    } catch (e: unknown) {
-      console.error(e);
-      throw e;
-    }
-  })();
 };
 
 export const subscribePoints = () => {
@@ -300,6 +319,48 @@ export const subscribePoints = () => {
     }
   })();
   return dataSubject;
+};
+
+export const checkSessionAsync = async (admin = false) => {
+  if (!hasSession(admin)) {
+    authFailure.next();
+    return false;
+  }
+  const data = await client.mutation('checkSession', {
+    sessionId,
+    userId: sessionUserId,
+    admin: admin || isAdmin || undefined,
+  });
+  if (!data) {
+    sessionId = '';
+    sessionUserId = '';
+    isAdmin = false;
+    sessionExpires = 0;
+    infosSet = false;
+    houseConfirmed = undefined;
+    current = false;
+    localStorage.setItem('session', '');
+    localStorage.setItem('sessionUserId', '');
+    localStorage.setItem('sessionExpires', '');
+    localStorage.setItem('admin', '');
+    localStorage.setItem('infosSet', '');
+    localStorage.setItem('houseConfirmed', '');
+    localStorage.setItem('current', '');
+    authFailure.next();
+    return false;
+  }
+  return true;
+};
+
+export const checkSession = (admin = false) => {
+  (async () => {
+    try {
+      await checkSessionAsync(admin);
+    } catch (e: unknown) {
+      console.error(e);
+      throw e;
+    }
+  })();
 };
 
 export const register = async (email: string, captchaToken?: string) => {
@@ -344,21 +405,28 @@ export const logIn = async (
     if (result.success && result.sessionId) {
       sessionId = result.sessionId;
       isAdmin = !!result.admin;
-    } else {
-      sessionId = '';
-      isAdmin = false;
+      sessionUserId = result.userId ?? '';
+      sessionExpires = Date.now() + 1000 * 60 * 60 * 23.5;
+      infosSet = !!result.infosSet;
+      houseConfirmed = result.houseConfirmed;
+      current = !!result.current;
     }
-    sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5;
+
     if (sessionId) {
-      sessionEmail = email ?? '';
-      localStorage.setItem('sessionEmail', sessionEmail);
+      localStorage.setItem('sessionUserId', sessionUserId);
       localStorage.setItem('session', sessionId);
       localStorage.setItem('sessionExpires', sessionExpires.toString());
       localStorage.setItem('admin', isAdmin ? 'true' : '');
+      localStorage.setItem('infosSet', infosSet ? 'true' : '');
+      localStorage.setItem('houseConfirmed', houseConfirmed || '');
+      localStorage.setItem('current', current ? 'true' : '');
     }
     return {
       success: result.success,
       admin: result.admin,
+      infosSet: result.infosSet,
+      houseConfirmed: result.houseConfirmed,
+      current: result.current,
       showCaptcha: result.showCaptcha,
       nextTry: new Date(result.nextTry),
     };
@@ -368,30 +436,39 @@ export const logIn = async (
   }
 };
 
-export const verify = async (email: string, code: string) => {
+export const verify = async (userId: string, code: string) => {
   try {
     const result = await client.mutation('verify', {
-      email,
+      userId,
       code,
     });
     if (result.success && result.sessionId) {
       sessionId = result.sessionId;
       isAdmin = !!result.admin;
-    } else {
-      sessionId = '';
-      isAdmin = false;
+      sessionExpires = Date.now() + 1000 * 60 * 60 * 23.5;
+      sessionUserId = userId ?? '';
+      infosSet = !!result.infosSet;
+      houseConfirmed = result.houseConfirmed;
+      current = !!result.current;
+      setCode = result.code ?? '';
+      setExpired = Date.now() + 1000 * 60 * 25 ?? 0;
     }
-    sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5;
+
     if (sessionId) {
-      sessionEmail = email ?? '';
-      localStorage.setItem('sessionEmail', sessionEmail);
+      localStorage.setItem('sessionUserId', sessionUserId);
       localStorage.setItem('session', sessionId);
       localStorage.setItem('sessionExpires', sessionExpires.toString());
       localStorage.setItem('admin', isAdmin ? 'true' : '');
+      localStorage.setItem('infosSet', infosSet ? 'true' : '');
+      localStorage.setItem('houseConfirmed', houseConfirmed || '');
+      localStorage.setItem('current', current ? 'true' : '');
     }
     return {
       success: result.success,
       admin: result.admin,
+      infosSet: result.infosSet,
+      houseConfirmed: result.houseConfirmed,
+      current: result.current,
       code: result.code,
     };
   } catch (e) {
@@ -400,22 +477,73 @@ export const verify = async (email: string, code: string) => {
   }
 };
 
-export const reset = async (
-  code: string,
-  newPassword?: string,
-  name?: string
-) => {
+export const set = async (newPassword: string, name: string) => {
   try {
-    if (!sessionEmail) {
+    if (!hasSession()) {
+      authFailure.next();
       return false;
     }
-    const result = await client.mutation('reset', {
-      email: sessionEmail,
-      password: newPassword || undefined,
-      name: name || undefined,
-      code,
+    if (!hasSetCode()) {
+      await logOut();
+      authFailure.next();
+      return false;
+    }
+
+    const result = await client.mutation('setUserInfo', {
+      userId: sessionUserId,
+      password: newPassword,
+      name,
+      code: setCode,
       sessionId,
     });
+
+    if (result) {
+      userInfo = result;
+      infosSet = !!result.infosSet;
+      houseConfirmed = result.houseConfirmed;
+      current = !!result.current;
+      localStorage.setItem('infosSet', infosSet ? 'true' : '');
+      localStorage.setItem('houseConfirmed', houseConfirmed || '');
+      localStorage.setItem('current', current ? 'true' : '');
+      clearSetCode();
+    }
+    return result;
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const reset = async (newPassword?: string, name?: string) => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
+    }
+    if (!hasSetCode()) {
+      await logOut();
+      authFailure.next();
+      return false;
+    }
+
+    const result = await client.mutation('resetUserInfo', {
+      userId: sessionUserId,
+      password: newPassword || undefined,
+      name: name || undefined,
+      code: setCode,
+      sessionId,
+    });
+
+    if (result) {
+      userInfo = result;
+      infosSet = !!result.infosSet;
+      houseConfirmed = result.houseConfirmed;
+      current = !!result.current;
+      localStorage.setItem('infosSet', infosSet ? 'true' : '');
+      localStorage.setItem('houseConfirmed', houseConfirmed || '');
+      localStorage.setItem('current', current ? 'true' : '');
+      clearSetCode();
+    }
     return result;
   } catch (e) {
     console.error(e);
@@ -429,16 +557,61 @@ export const change = async (
   name?: string
 ) => {
   try {
-    if (!sessionEmail) {
+    if (!hasSession()) {
+      authFailure.next();
       return false;
     }
-    const result = await client.mutation('change', {
-      email: sessionEmail,
+
+    const result = await client.mutation('changeUserInfo', {
+      userId: sessionUserId,
       password,
       newPassword: newPassword || undefined,
       name: name || undefined,
       sessionId,
     });
+
+    if (result) {
+      userInfo = result;
+      infosSet = !!result.infosSet;
+      houseConfirmed = result.houseConfirmed;
+      current = !!result.current;
+      localStorage.setItem('infosSet', infosSet ? 'true' : '');
+      localStorage.setItem('houseConfirmed', houseConfirmed || '');
+      localStorage.setItem('current', current ? 'true' : '');
+    }
+    return result;
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const getUserInfo = async () => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
+    }
+
+    if (userInfo) {
+      return userInfo;
+    }
+
+    const result = await client.query('getUserInfo', {
+      userId: sessionUserId,
+      sessionId,
+    });
+
+    if (result) {
+      console.log(result);
+      userInfo = result;
+      infosSet = !!result.infosSet;
+      houseConfirmed = result.houseConfirmed;
+      current = !!result.current;
+      localStorage.setItem('infosSet', infosSet ? 'true' : '');
+      localStorage.setItem('houseConfirmed', houseConfirmed || '');
+      localStorage.setItem('current', current ? 'true' : '');
+    }
     return result;
   } catch (e) {
     console.error(e);
@@ -448,15 +621,24 @@ export const change = async (
 
 export const logOut = async () => {
   try {
-    await client.mutation('logout', { sessionId });
+    loggingOut = true;
+    await client.mutation('logout', { sessionId, userId: sessionUserId });
+    clearAll();
     sessionId = '';
-    sessionEmail = '';
+    sessionUserId = '';
     isAdmin = false;
     sessionExpires = 0;
-    localStorage.setItem('sessionEmail', '');
+    infosSet = false;
+    houseConfirmed = undefined;
+    current = false;
+    localStorage.setItem('sessionUserId', '');
     localStorage.setItem('session', '');
     localStorage.setItem('sessionExpires', '');
     localStorage.setItem('admin', '');
+    localStorage.setItem('infosSet', '');
+    localStorage.setItem('houseConfirmed', '');
+    localStorage.setItem('current', '');
+    loggingOut = false;
   } catch (e) {
     console.error(e);
     throw e;

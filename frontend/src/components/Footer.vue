@@ -1,16 +1,36 @@
 <script setup lang="ts">
-  import { logOut, hasSession } from '../data';
+  import { useRouter } from 'vue-router';
+  import { APP_NAME, ORG_NAME } from '../../../backend/src/constants';
+  import { logOut } from '../data';
+  import {
+    loggedIn,
+    resetSettings,
+    resetState,
+    userLoggedIn,
+  } from '../settings';
+
+  const router = useRouter();
+
+  let buttonDisabled = false;
 
   const logOutOnclick = async () => {
     try {
-      await logOut();
+      if (!buttonDisabled) {
+        buttonDisabled = true;
+        await logOut();
+        buttonDisabled = false;
+        resetState();
+        resetSettings();
+        router.push('/');
+      }
     } catch (e) {
+      console.error(e);
       throw e;
     }
   };
 
   const mailToUs = () => {
-    location.href = 'mailto:info@stair.ch?&subject=STAIR Houses Website';
+    location.href = `mailto:info@stair.ch?&subject=${ORG_NAME} ${APP_NAME} Website`;
   };
 </script>
 
@@ -20,28 +40,20 @@
       >Organised by STAIR</a
     >
     <router-link
-      v-if="
-        $router.currentRoute.value.path !== '/admin' &&
-        $router.currentRoute.value.path !== '/user' &&
-        $router.currentRoute.value.path !== '/login'
-      "
-      :to="hasSession() ? (hasSession(true) ? '/admin' : '/user') : '/login'"
+      v-if="$router.currentRoute.value.path === '/'"
+      :to="loggedIn ? (userLoggedIn ? '/user' : '/admin') : '/login'"
       class="action-link footer-item"
       >{{
-        hasSession()
-          ? hasSession(true)
-            ? 'Admin panel'
-            : 'User panel'
-          : 'Log in'
+        loggedIn ? (userLoggedIn ? 'User menu' : 'Admin panel') : 'Log in'
       }}</router-link
     >
-    <router-link
-      v-else-if="$router.currentRoute.value.path === '/login' && hasSession()"
-      to="/"
+    <div
+      v-else-if="$router.currentRoute.value.path === '/login' && loggedIn"
       class="action-link footer-item"
       @click="logOutOnclick()"
-      >Log out</router-link
     >
+      Log out
+    </div>
     <router-link
       v-else-if="$router.currentRoute.value.path !== '/login'"
       to="/login"
@@ -71,6 +83,7 @@
     line-height: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
     color: unset;
     text-decoration: none;
+    cursor: pointer;
   }
 
   .subtitle,

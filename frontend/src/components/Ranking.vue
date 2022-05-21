@@ -1,7 +1,34 @@
 <script setup lang="ts">
   import { BehaviorSubject } from 'rxjs';
   import { ref } from 'vue';
-  import { DisplayData, getPoints, subscribePoints } from '../data';
+  import {
+    authFailure,
+    checkSession,
+    getPoints,
+    hasSession,
+    hasUserSession,
+    isLoggingOut,
+    subscribePoints,
+  } from '../data';
+  import { useRouter } from 'vue-router';
+  import type { DisplayData } from '../model';
+  import { resetSettings, resetState } from '../settings';
+  const router = useRouter();
+
+  authFailure.subscribe(() => {
+    resetState();
+    resetSettings();
+  });
+
+  if (!isLoggingOut() && hasSession()) {
+    if (hasUserSession()) {
+      router.push('/user');
+    } else {
+      router.push('/admin');
+    }
+  } else {
+    checkSession();
+  }
 
   const displayData: BehaviorSubject<DisplayData> = subscribePoints();
 
@@ -17,7 +44,7 @@
 </script>
 
 <template>
-  <div class="ranking">
+  <div class="content-base ranking">
     <div class="ranking-image"></div>
     <div class="ranking-content">
       <input class="subheader" value="SCOREBOARD" />
@@ -47,12 +74,6 @@
 
   .ranking {
     position: relative;
-    width: calc(100% - 2rem);
-    height: calc(85vh - 2rem);
-    height: calc((85 * (100vh - var(--vh-offset, 0px)) / 100) - 2rem);
-    padding: 1rem;
-    margin: 0;
-    border: none;
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -156,7 +177,6 @@
 
   @media (max-aspect-ratio: 1/1) {
     .ranking {
-      height: calc(100% - 15vw - 2rem);
       display: block;
     }
   }

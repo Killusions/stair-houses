@@ -33,6 +33,7 @@
           type="datetime-local"
           name="date"
           placeholder="Date"
+          class="date"
           :class="{ warning: !settings.date }"
         />
       </div>
@@ -94,22 +95,37 @@
   .panel {
     display: flex;
     flex-direction: row;
+    justify-content: center;
+    align-items: center;
     width: calc(100% - 1rem);
-    height: calc(15vh - 1rem);
-    height: calc((15 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
+    height: calc(10vh - 1rem);
+    height: calc((10 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
     padding: 0.5rem;
     margin: 0;
     border: none;
 
+    .icon {
+      color: #000000;
+      font-size: 0.85rem;
+      margin: 0;
+      padding: 0;
+      border: none;
+      margin-right: -0.2rem;
+
+      &.button-icon {
+        font-size: 1.125rem;
+      }
+    }
+
     .input-container {
       display: flex;
       flex-direction: column;
+      justify-content: center;
+      align-items: center;
       width: 25%;
-      padding: 0.5rem;
-      font-size: 3vh;
-      font-size: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
-      line-height: 3vh;
-      line-height: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
+      padding: 0.25rem;
+      font-size: 1rem;
+      line-height: 1.25rem;
 
       label {
         margin-left: 0.5vh;
@@ -127,19 +143,16 @@
       }
 
       input {
-        height: 2vh;
-        height: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
-        font-size: 2vh;
-        font-size: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
-        line-height: 2vh;
-        line-height: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
+        font-family: Arial, Helvetica, sans-serif;
+        height: 0.75rem;
+        font-size: 1rem;
+        line-height: 1rem;
         width: 90%;
-        padding: 0.5vh;
-        padding: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-        margin: 0.5vh;
-        margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-        margin-top: 1.5vh;
-        margin-top: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
+        padding: 0.25rem;
+        margin: 0.25vh;
+        margin: calc((0.25 * (100vh - var(--vh-offset, 0px)) / 100));
+        margin-top: 1vh;
+        margin-top: calc((1 * (100vh - var(--vh-offset, 0px)) / 100));
         border: solid 0.2vh rgb(179, 179, 179);
         border: solid calc((0.2 * (100vh - var(--vh-offset, 0px)) / 100))
           rgb(179, 179, 179);
@@ -153,17 +166,22 @@
             rgb(194, 0, 0);
         }
 
-        &#date {
+        &.date {
           margin: 0;
           margin-top: 0;
         }
       }
 
       .date-inner-container {
-        margin: 0.5vh;
-        margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-        margin-top: 1.5vh;
-        margin-top: calc((1.5 * (100vh - var(--vh-offset, 0px)) / 100));
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        margin: 0.25vh;
+        margin: calc((0.25 * (100vh - var(--vh-offset, 0px)) / 100));
+        margin-top: 1vh;
+        margin-top: calc((1 * (100vh - var(--vh-offset, 0px)) / 100));
         padding: 0;
         border: none;
       }
@@ -200,23 +218,26 @@
     }
   }
 
+  @media (min-aspect-ratio: 3/1) {
+    .panel {
+      height: calc(15vh - 1rem);
+      height: calc((15 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
+    }
+  }
+
   @media (max-aspect-ratio: 1/1) {
     .panel {
       padding: 0.125rem;
       width: calc(100% - 0.25rem);
-      height: calc(15vw - 1rem);
+      height: calc(12vw - 1rem);
 
       .input-container {
-        padding: 0.1rem;
-        font-size: 3vw;
-        line-height: 3vw;
-
         label {
           margin-left: 0.5vw;
         }
 
         > * {
-          margin-top: 1vw;
+          margin-top: 0.5vw;
         }
 
         > *:first-child {
@@ -224,12 +245,9 @@
         }
 
         input {
-          height: 2vw;
-          font-size: 2vw;
-          line-height: 2vw;
-          padding: 0.5vw;
-          margin: 0.5vw;
-          margin-top: 1.5vw;
+          font-family: Arial, Helvetica, sans-serif;
+          margin: 0.25vw;
+          margin-top: 1vw;
           border: solid 0.2vw rgb(179, 179, 179);
           border-radius: 2vw;
 
@@ -237,15 +255,15 @@
             border: solid 0.3vw rgb(194, 0, 0);
           }
 
-          &#date {
+          &.date {
             margin: 0;
             margin-top: 0;
           }
         }
 
         .date-inner-container {
-          margin: 0.5vw;
-          margin-top: 1.5vw;
+          margin: 0.25vw;
+          margin-top: 1vw;
         }
 
         .keep-container {
@@ -264,6 +282,12 @@
           }
         }
       }
+    }
+  }
+
+  @media (max-aspect-ratio: 9/16) {
+    .panel {
+      height: calc(25vw - 1rem);
     }
   }
 </style>

@@ -37,6 +37,12 @@ export interface StringSetting extends BaseSetting {
   type: 'string';
 }
 
+export interface BooleanSetting extends BaseSetting {
+  key: string;
+  value: boolean;
+  type: 'boolean';
+}
+
 export interface NumberSetting extends BaseSetting {
   key: string;
   value: number;
@@ -51,14 +57,24 @@ export interface DateSetting extends BaseSetting {
 
 export interface SubSetting extends BaseSetting {
   key: string;
-  value: Setting;
+  value: Setting[];
   type: 'sub';
 }
 
-export interface User {
+export interface UserInfo {
+  name?: string;
+}
+
+export interface UserInfoPrivate extends UserInfo {
+  infosSet: boolean;
+  houseConfirmed?: keyof typeof COLORS;
+  current: boolean;
+}
+
+export interface User extends UserInfoPrivate {
+  customId: string;
   email: string;
   registerDate: Date;
-  name?: string;
   hash?: string;
   verifyHash?: string;
   verifyExpiration?: Date;
@@ -70,4 +86,9 @@ export interface User {
   changedDate?: Date;
 }
 
-export type Setting = StringSetting | NumberSetting | DateSetting | SubSetting;
+export type Setting =
+  | StringSetting
+  | BooleanSetting
+  | NumberSetting
+  | DateSetting
+  | SubSetting;

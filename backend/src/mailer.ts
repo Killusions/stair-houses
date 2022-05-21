@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import 'dotenv/config';
+import { ORG_NAME } from './constants.js';
 
 const mailHostname = process.env.STAIR_HOUSES_MAIL_HOSTNAME;
 const mailPort = parseInt(process.env.STAIR_HOUSES_MAIL_PORT ?? '') || 587;
@@ -12,10 +14,10 @@ const mailUseTLS =
   true;
 const mailUsername = process.env.STAIR_HOUSES_MAIL_USERNAME;
 const mailPassword = process.env.STAIR_HOUSES_MAIL_PASSWORD;
-const mailAddress = process.env.STAIR_HOUSES_MAIL_ADDRESS;
+export const mailAddress = process.env.STAIR_HOUSES_MAIL_ADDRESS;
 
 const mailTransporter =
-  mailHostname && mailHostname && mailPassword && mailAddress
+  mailHostname && mailHostname && mailUsername && mailPassword && mailAddress
     ? nodemailer.createTransport({
         host: mailHostname,
         port: mailPort,
@@ -25,7 +27,7 @@ const mailTransporter =
           user: mailUsername,
           pass: mailPassword,
         },
-        logger: true,
+        logger: false,
       })
     : null;
 
@@ -36,13 +38,21 @@ export const sendMail = async (
   html?: string
 ) => {
   if (mailTransporter) {
-    await mailTransporter.sendMail({
-      from: '"STAIR" <' + mailAddress + '>',
-      to,
-      subject,
-      text: body,
-      html,
+    setTimeout(async () => {
+      try {
+        await mailTransporter.sendMail({
+          from: `"${ORG_NAME}" <${mailAddress}>`,
+          to,
+          subject,
+          text: body,
+          html,
+        });
+      } catch (e) {
+        console.error(e);
+        throw e;
+      }
     });
+    return;
   } else {
     console.log(
       'Missing mail configuration, instead printing mail here for testing purposes'
@@ -54,8 +64,7 @@ export const sendMail = async (
         subject +
         '; ' +
         body +
-        ' | ' +
-        html
+        (html ? ' | ' + html : '')
     );
   }
 };

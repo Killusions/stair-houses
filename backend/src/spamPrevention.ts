@@ -1,8 +1,8 @@
 import hCaptcha from 'hcaptcha';
+import 'dotenv/config';
+import { COLORS } from './constants';
 
 const captchaSecret = process.env.STAIR_HOUSES_CAPTCHA_SECRET ?? '';
-
-console.log('starting');
 
 if (!captchaSecret) {
   console.log('Captcha not configured, allowing requests without captcha.');
@@ -16,13 +16,24 @@ const passwordFailedCaptcha: Record<string, number> = {};
 export const timeOutCaptchaAndResponse = async (
   ip: string,
   captchaToken?: string,
-  action?: () => Promise<{ success: boolean; admin?: boolean }>,
+  action?: () => Promise<{
+    success: boolean;
+    admin?: boolean;
+    userId?: string;
+    infosSet?: boolean;
+    houseConfirmed?: keyof typeof COLORS;
+    current?: boolean;
+  }>,
   response?: boolean
 ): Promise<{
   success: boolean;
   showCaptcha: boolean;
   nextTry: Date;
   admin?: boolean;
+  userId?: string;
+  infosSet?: boolean;
+  houseConfirmed?: keyof typeof COLORS;
+  current?: boolean;
 }> => {
   const timeOut = passwordTimeOuts[ip];
   let needsCaptcha = false;
@@ -41,7 +52,7 @@ export const timeOutCaptchaAndResponse = async (
     }
   }
   if (timeOut) {
-    if (timeOut > new Date()) {
+    if (timeOut.getTime() > Date.now()) {
       return {
         success: false,
         showCaptcha: previousCount > 3,
@@ -87,7 +98,7 @@ export const timeOutCaptchaAndResponse = async (
         lengthInMin = 1440;
         break;
     }
-    const nextTry = new Date(new Date().getTime() + lengthInMin * 60 * 1000);
+    const nextTry = new Date(Date.now() + lengthInMin * 60 * 1000);
     passwordTimeOuts[ip] = nextTry;
     delete passwordTries[ip];
     previous.push(new Date());
@@ -138,6 +149,10 @@ export const timeOutCaptchaAndResponse = async (
           passwordTries[ip] === 8,
         nextTry: new Date(),
         admin: true,
+        userId: result.userId,
+        infosSet: result.infosSet,
+        houseConfirmed: result.houseConfirmed,
+        current: result.current,
       };
     }
     return {
@@ -147,6 +162,10 @@ export const timeOutCaptchaAndResponse = async (
         passwordTries[ip] === 6 ||
         passwordTries[ip] === 8,
       nextTry: new Date(),
+      userId: result.userId,
+      infosSet: result.infosSet,
+      houseConfirmed: result.houseConfirmed,
+      current: result.current,
     };
   }
   return {
@@ -156,5 +175,6 @@ export const timeOutCaptchaAndResponse = async (
       passwordTries[ip] === 6 ||
       passwordTries[ip] === 8,
     nextTry: new Date(),
+    userId: result.userId,
   };
 };

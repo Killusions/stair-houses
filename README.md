@@ -101,6 +101,8 @@ To install and run the project you will need the following:
 
 To install and run the subprojects using the helper scripts (from the root level) use the following commands.
 
+WARNING: If you are running windows, these helper scripts currently don't work. Skip to the manual way further down.
+
 1. Install NPM packages for all subprojects
 
    ```sh
@@ -256,13 +258,21 @@ STAIR_HOUSES_IP="<server IP address, NOT DOMAIN!!!>"
 STAIR_HOUSES_SSL_CERT="<file path to ssl certificate (can be omitted, then http/ws will be used)>"
 STAIR_HOUSES_SSL_KEY="<file path to ssl private key (can be omitted together with the certificate)>"
 STAIR_HOUSES_FRONTEND_HOST="stair.ch"
-STAIR_HOUSES_FRONTEND_PORT=""
+STAIR_HOUSES_FRONTEND_PORT="<Port the frontend uses, can be omitted to use dev server. SET IN PRODUCTION!>"
+STAIR_HOUSES="<Path the frontend uses, can be omitted if path is root or to use dev server.>"
 STAIR_HOUSES_DEFAULT_PASSWORD="<default password to be set on first connection to database, if not set already, SHOULD BE REMOVED/OMITTED LATER!!!>"
 STAIR_HOUSES_DATABASE_HOST="localhost"
 STAIR_HOUSES_DATABASE_PORT="27017"
 STAIR_HOUSES_DATABASE_USER="<MongoDB user (can be omitted)>"
 STAIR_HOUSES_DATABASE_PASSWORD="<MongoDB password (can be omitted)"
 STAIR_HOUSES_CAPTCHA_SECRET="<hCaptcha secret (can be omitted to disable captcha)>"
+STAIR_HOUSES_MAIL_HOSTNAME="<E-Mail server hostname (can be omitted to disable E-Mails)>"
+STAIR_HOUSES_MAIL_PORT="<E-Mail server port (can be omitted to disable E-Mails)>"
+STAIR_HOUSES_MAIL_SECURE="<Wether E-Mail should use secure transfer (false if omitted)>"
+STAIR_HOUSES_MAIL_USE_TLS="<Wether E-Mail should use TLS (false if omitted)>"
+STAIR_HOUSES_MAIL_USERNAME="<E-Mail server username (can be omitted to disable E-Mails)>"
+STAIR_HOUSES_MAIL_PASSWORD="<E-Mail server password (can be omitted to disable E-Mails)>"
+STAIR_HOUSES_MAIL_ADDRESS="<E-Mail sender address (can be omitted to disable E-Mails)>"
 ```
 
 These can also be set in a `.env` file in the directory it's run from. WARNING: Unlike in the frontend, they will be used for every run (including testing and development). They are not needed at compile time and can be omitted for most testing and development setups.

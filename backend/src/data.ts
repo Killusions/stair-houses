@@ -3,6 +3,7 @@ import { COLORS } from './constants.js';
 import { makeId } from './id.js';
 import type { PointEvent, Points, Setting, StringSetting, User } from './model';
 import { hashPassword } from './users.js';
+import 'dotenv/config';
 
 const rawHost = process.env.STAIR_HOUSES_DATABASE_HOST;
 const host = rawHost ? encodeURIComponent(rawHost) : 'localhost';
@@ -104,11 +105,8 @@ const ensureDBConnection = () => {
           key: 'password',
           type: 'string',
         })) as StringSetting | null;
-        let password: string | undefined;
-        if (passwordObject) {
-          password = passwordObject.value;
-        } else {
-          password = process.env.STAIR_HOUSES_DEFAULT_PASSWORD;
+        if (!passwordObject) {
+          let password = process.env.STAIR_HOUSES_DEFAULT_PASSWORD;
           if (!password) {
             password = makeId(15);
             console.log('Generated password: ' + password);
@@ -117,6 +115,18 @@ const ensureDBConnection = () => {
           await settingsCollection.insertOne({
             key: 'password',
             value: passwordHashed,
+            type: 'string',
+          });
+        }
+        const adminIdObject = (await settingsCollection.findOne({
+          key: 'adminId',
+          type: 'string',
+        })) as StringSetting | null;
+        if (!adminIdObject) {
+          const adminId = makeId(20);
+          await settingsCollection.insertOne({
+            key: 'adminId',
+            value: adminId,
             type: 'string',
           });
         }

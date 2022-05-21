@@ -1,16 +1,106 @@
 <script setup lang="ts">
-  import { ranking, secret } from '../settings';
+  import {
+    loggedIn,
+    userLoggedIn,
+    userConfirmed,
+    userCurrentConfirmed,
+    userSet,
+    ranking,
+    secret,
+  } from '../settings';
+  import { APP_NAME } from '../../../backend/src/constants';
+
+  defineProps({ showFilterPanel: { type: Boolean, default: false } });
 </script>
 
 <template>
   <div class="header">
-    <router-link to="/" class="header-container">
-      <img src="../assets/stairwhite.png" class="logo" />
-      <div class="title">Houses</div>
+    <router-link
+      :to="loggedIn ? (userLoggedIn ? '/user' : '/admin') : '/'"
+      class="header-container"
+    >
+      <img src="../assets/stairwhite.png" class="logo logo-big" />
+      <img src="../assets/stairwhitesmall.png" class="logo logo-small" />
+      <div class="title">{{ APP_NAME }}</div>
     </router-link>
-    <button v-if="secret" class="view-toggle" @click="ranking = !ranking">
-      {{ ranking ? 'Ranking' : 'Overview' }}
-    </button>
+    <div class="right-hand-buttons">
+      <router-link
+        v-if="$router.currentRoute.value.path === '/' && !loggedIn"
+        to="/login"
+        class="view-toggle"
+      >
+        Log in
+      </router-link>
+      <router-link
+        v-if="$router.currentRoute.value.path === '/' && loggedIn"
+        :to="userLoggedIn ? '/user' : '/admin'"
+        class="view-toggle"
+      >
+        {{ userLoggedIn ? 'User menu' : 'Admin panel' }}
+      </router-link>
+      <router-link
+        v-if="
+          ($router.currentRoute.value.path === '/login' ||
+            $router.currentRoute.value.path === '/user') &&
+          userLoggedIn &&
+          userSet &&
+          !userConfirmed &&
+          !showFilterPanel
+        "
+        to="/stateinfo"
+        class="view-toggle"
+      >
+        Configure
+      </router-link>
+      <router-link
+        v-if="
+          $router.currentRoute.value.path === '/stateinfo' && !userConfirmed
+        "
+        to="/login"
+        class="view-toggle"
+      >
+        Account
+      </router-link>
+      <router-link
+        v-if="
+          ($router.currentRoute.value.path === '/plans' ||
+            $router.currentRoute.value.path === '/add' ||
+            $router.currentRoute.value.path === '/login' ||
+            $router.currentRoute.value.path === '/stateinfo') &&
+          userSet
+        "
+        to="/user"
+        class="view-toggle"
+      >
+        Scores
+      </router-link>
+      <router-link
+        v-if="
+          ($router.currentRoute.value.path === '/user' ||
+            $router.currentRoute.value.path === '/plans' ||
+            $router.currentRoute.value.path === '/login' ||
+            $router.currentRoute.value.path === '/stateinfo') &&
+          userCurrentConfirmed &&
+          !showFilterPanel
+        "
+        to="/add"
+        class="view-toggle"
+      >
+        Add
+      </router-link>
+      <button
+        v-if="
+          ($router.currentRoute.value.path === '/' ||
+            $router.currentRoute.value.path === '/user' ||
+            $router.currentRoute.value.path === '/admin') &&
+          secret
+        "
+        class="view-toggle"
+        @click="ranking = !ranking"
+      >
+        {{ ranking ? 'Ranking' : 'Overview' }}
+      </button>
+    </div>
   </div>
 </template>
 
@@ -34,25 +124,36 @@
     text-decoration: none;
   }
 
+  .right-hand-buttons {
+    display: flex;
+    flex-direction: row;
+  }
+
   .logo {
     margin-left: 3.5vh;
     margin-left: calc((3.5 * (100vh - var(--vh-offset, 0px)) / 100));
     margin-right: 3.5vh;
     margin-right: calc((3.5 * (100vh - var(--vh-offset, 0px)) / 100));
-    height: 10vh;
-    height: calc((10 * (100vh - var(--vh-offset, 0px)) / 100));
+    height: 8vh;
+    height: calc((8 * (100vh - var(--vh-offset, 0px)) / 100));
     cursor: pointer;
+
+    &.logo-small {
+      display: none;
+    }
   }
 
   .title {
     font-weight: bold;
-    font-size: 9vh;
-    font-size: calc((9 * (100vh - var(--vh-offset, 0px)) / 100));
+    font-size: 7.2vh;
+    font-size: calc((7.2 * (100vh - var(--vh-offset, 0px)) / 100));
     line-height: 10vh;
     line-height: calc((10 * (100vh - var(--vh-offset, 0px)) / 100));
   }
 
   .view-toggle {
+    display: block;
+    box-sizing: border-box;
     margin-left: auto;
     margin-right: 0.75rem;
     margin-top: 0;
@@ -66,6 +167,8 @@
     border: solid 0.1rem rgb(179, 179, 179);
     border-radius: 1rem;
     box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    text-decoration: none;
+    color: #000000;
   }
 
   @media (min-aspect-ratio: 3/1) {
@@ -79,13 +182,13 @@
       margin-left: calc((2.333 * (100vh - var(--vh-offset, 0px)) / 100));
       margin-right: 2.333vh;
       margin-right: calc((2.333 * (100vh - var(--vh-offset, 0px)) / 100));
-      height: 13.333vh;
-      height: calc((13.333 * (100vh - var(--vh-offset, 0px)) / 100));
+      height: 10.666vh;
+      height: calc((10.666 * (100vh - var(--vh-offset, 0px)) / 100));
     }
 
     .title {
-      font-size: 12vh;
-      font-size: calc((12 * (100vh - var(--vh-offset, 0px)) / 100));
+      font-size: 9.6vh;
+      font-size: calc((9.6 * (100vh - var(--vh-offset, 0px)) / 100));
       line-height: 13.333vh;
       line-height: calc((13.333 * (100vh - var(--vh-offset, 0px)) / 100));
     }
@@ -99,11 +202,11 @@
     .logo {
       margin-left: 1.75vw;
       margin-right: 1.75vw;
-      height: 10vw;
+      height: 8vw;
     }
 
     .title {
-      font-size: 9vw;
+      font-size: 7.2vw;
       line-height: 10vw;
     }
 
@@ -123,11 +226,19 @@
     .logo {
       margin-left: 2.333vw;
       margin-right: 2.333vw;
-      height: 13.333vw;
+      height: 10.666vw;
+
+      &.logo-small {
+        display: block;
+      }
+
+      &.logo-big {
+        display: none;
+      }
     }
 
     .title {
-      font-size: 12vw;
+      font-size: 9.6vw;
       line-height: 13.333vw;
     }
   }

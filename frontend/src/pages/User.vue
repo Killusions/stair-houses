@@ -1,24 +1,35 @@
 <script setup lang="ts">
   import Houses from '../components/Houses.vue';
   import Ranking from '../components/Ranking.vue';
-  import { ranking } from '../settings';
+  import { resetSettings, ranking, resetState } from '../settings';
   import { useRouter } from 'vue-router';
-  import { authFailure, checkSession, hasModifiableSession } from '../data';
+  import {
+    authFailure,
+    checkSession,
+    hasSetUserSession,
+    hasUserSession,
+  } from '../data';
   const router = useRouter();
 
   authFailure.subscribe(() => {
+    resetState();
+    resetSettings();
     router.push('/login');
   });
 
-  if (!hasModifiableSession()) {
+  if (!hasUserSession()) {
     router.push('/admin');
+  } else if (!hasSetUserSession()) {
+    router.push('/login');
+  } else {
+    checkSession();
   }
-  checkSession();
 </script>
 
 <template>
   <div class="page">
-    <Ranking v-if="ranking" :allow-edit="false"> </Ranking>
-    <Houses v-else :allow-edit="false"> </Houses>
+    <Ranking v-if="ranking" :allow-edit="false" :show-filter-panel="true">
+    </Ranking>
+    <Houses v-else :small="true" :allow-edit="false"> </Houses>
   </div>
 </template>

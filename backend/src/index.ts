@@ -8,6 +8,8 @@ import { createContext } from './context.js';
 import { appRouter } from './router.js';
 import 'dotenv/config';
 
+console.log('starting');
+
 const cert = process.env.STAIR_HOUSES_SSL_CERT ?? '';
 const key = process.env.STAIR_HOUSES_SSL_KEY ?? '';
 
@@ -19,6 +21,8 @@ const makeHTTPSFastify = () => {
       key: fs.readFileSync(key),
       cert: fs.readFileSync(cert),
     },
+    maxParamLength: 5000,
+    bodyLimit: 10000000,
   });
 };
 
@@ -27,7 +31,10 @@ const makeFastify = (): ReturnType<typeof makeHTTPSFastify> => {
     return makeHTTPSFastify();
   }
   // Hack because their signatures are incompatible, but we still want to allow localhost
-  return fastify() as unknown as ReturnType<typeof makeHTTPSFastify>;
+  return fastify({
+    maxParamLength: 5000,
+    bodyLimit: 10000000,
+  }) as unknown as ReturnType<typeof makeHTTPSFastify>;
 };
 
 const server = makeFastify();
@@ -43,15 +50,25 @@ server.register(fp(fastifyTRPCPlugin), {
 export const frontendHost =
   process.env.STAIR_HOUSES_FRONTEND_HOST ?? 'localhost';
 export const frontendPort = process.env.STAIR_HOUSES_FRONTEND_PORT ?? '3000';
+export const frontendPath = process.env.STAIR_HOUSES_FRONTEND_PATH ?? '/#';
+export const frontendProtocol =
+  process.env.STAIR_HOUSES_FRONTEND_PROTOCOL ?? 'http://';
 
-server.register(fastifyCors, () => (req, callback) => {
-  let corsOptions;
-  if (req.hostname === frontendHost) {
-    corsOptions = { origin: true };
-  } else {
-    corsOptions = { origin: false };
-  }
-  callback(null, corsOptions);
+export const generateFrontendLink = (path: string) => {
+  return `${frontendProtocol}${frontendHost}${
+    frontendPort ? ':' + frontendPort : ''
+  }${frontendPath}${path}`;
+};
+
+server.register(fastifyCors, {
+  origin: (origin, cb) => {
+    const hostname = new URL(origin).hostname;
+    if (hostname === frontendHost) {
+      cb(null, true);
+      return;
+    }
+    cb(new Error('Not allowed'), false);
+  },
 });
 (async () => {
   try {

@@ -3,20 +3,32 @@
   import {
     authFailure,
     change,
-    checkSession,
+    checkHasSetCode,
+    checkSessionAsync,
+    clearSetCode,
     emailLogIn,
-    hasModifiableSession,
+    getUserInfo,
     hasSession,
+    hasUserSession,
     logIn,
     register,
     reset,
+    set,
     verify,
   } from '../data';
-  import { ref } from 'vue';
+  import { onUnmounted, ref } from 'vue';
   import moment from 'moment';
   import Captcha from '../components/Captcha.vue';
-  import { EMAIL_ENDING } from '../../../backend/src/constants';
+  import { EMAIL_ENDING, EMAIL_REGEX } from '../../../backend/src/constants';
   import { base64Decode } from '../helpers';
+  import {
+    loggedIn,
+    resetSettings,
+    resetState,
+    userSet,
+    userConfirmed,
+    userLoggedIn,
+  } from '../settings';
 
   enum LoginType {
     logIn,
@@ -31,115 +43,19 @@
 
   const route = useRoute();
 
-  const type = ref(
-    hasSession()
-      ? hasModifiableSession()
-        ? LoginType.change
-        : LoginType.none
-      : LoginType.logIn
-  );
-
-  checkSession();
-  authFailure.subscribe(() => (type.value = LoginType.logIn));
-
-  const queryEmail =
-    route.query.email && typeof route.query.email === 'string'
-      ? base64Decode(route.query.email)
-      : '';
-  const queryCode =
-    route.query.code && typeof route.query.code === 'string'
-      ? base64Decode(route.query.code)
-      : '';
   const queryIsRegister = !!route.query.register;
 
-  const message = ref('');
-
-  if (queryEmail && queryCode) {
-    type.value = LoginType.confirm;
-    message.value = queryIsRegister
-      ? 'Are you sure you want to verify your email address?'
-      : 'Are you sure you want to log in using your email address?';
-  }
-
-  let setCode = '';
-
-  const confirmAction = async () => {
-    try {
-      message.value = '';
-      const result = await verify(queryEmail, queryCode);
-      if (result.success) {
-        if (result.admin) {
-          router.push('/admin');
-        } else {
-          setCode = result.code ?? '';
-          if (queryIsRegister) {
-            type.value = LoginType.set;
-          } else {
-            type.value = LoginType.setAgain;
-          }
-        }
-        router.replace({ query: {} });
-      } else {
-        message.value =
-          'Could not ' +
-          (queryIsRegister ? 'verify' : 'log in using') +
-          ' your email address, please try again in a bit.';
-      }
-    } catch (e) {
-      throw e;
-    }
-  };
-
-  const setAction = async () => {
-    try {
-      message.value = '';
-      if (!newPassword.value && !name.value) {
-        message.value = 'New password and name cannot both be empty';
-        return;
-      }
-      const result = await reset(setCode, newPassword.value, name.value);
-      if (result) {
-        setCode = '';
-        router.push('/user');
-      } else {
-        message.value = 'Could not set values, please try again in a bit.';
-      }
-    } catch (e) {
-      throw e;
-    }
-  };
-
-  const changeAction = async () => {
-    try {
-      passwordMessage.value = '';
-      message.value = '';
-      let fail = false;
-      if (!password.value) {
-        passwordMessage.value = 'Password cannot be empty';
-        fail = true;
-      }
-      if (!newPassword.value && !name.value) {
-        message.value = 'New password and name cannot both be empty';
-        fail = true;
-      }
-      if (fail) {
-        return;
-      }
-      const result = await change(
-        password.value,
-        newPassword.value,
-        name.value
-      );
-      if (result) {
-        setCode = '';
-        router.push('/user');
-      } else {
-        message.value = 'Incorrect password';
-      }
-    } catch (e) {
-      throw e;
-    }
-  };
+  const type = ref(
+    loggedIn.value
+      ? userLoggedIn.value
+        ? userSet.value
+          ? LoginType.change
+          : LoginType.set
+        : LoginType.none
+      : queryIsRegister
+      ? LoginType.register
+      : LoginType.logIn
+  );
 
   const captchaSitekey =
     import.meta.env.VITE_STAIR_HOUSES_CAPTCHA_SITEKEY?.toString() ?? '';
@@ -149,34 +65,252 @@
   const email = ref('');
   const password = ref('');
   const newPassword = ref('');
+  const previousName = ref('');
   const name = ref('');
 
+  const message = ref('');
   const emailMessage = ref('');
   const passwordMessage = ref('');
+  const newPasswordMessage = ref('');
   const captchaMessage = ref('');
+  const nameMessage = ref('');
+
+  const clearMessages = () => {
+    message.value = '';
+    emailMessage.value = '';
+    passwordMessage.value = '';
+    newPasswordMessage.value = '';
+    captchaMessage.value = '';
+    nameMessage.value = '';
+  };
 
   const showCaptcha = ref(false);
 
+  const buttonDisabled = ref(false);
+
   let captchaToken = '';
+
+  onUnmounted(() => {
+    if (type.value === LoginType.setAgain) {
+      clearSetCode();
+    }
+  });
+
+  const setFieldsWithPrevious = async (correctType: LoginType) => {
+    if (type.value === correctType) {
+      const userInfo = await getUserInfo();
+      if (userInfo && type.value === correctType) {
+        if (!name.value && userInfo.name) {
+          name.value = userInfo.name;
+          previousName.value = userInfo.name;
+        }
+      }
+    }
+  };
+
+  (async () => {
+    try {
+      if (
+        (await checkSessionAsync()) &&
+        (type.value !== LoginType.set || (await checkHasSetCode()))
+      ) {
+        await setFieldsWithPrevious(LoginType.change);
+      }
+    } catch (e: unknown) {
+      console.error(e);
+      throw e;
+    }
+  })();
+
+  authFailure.subscribe(() => {
+    resetState();
+    resetSettings();
+    type.value = LoginType.logIn;
+    buttonDisabled.value = false;
+    message.value = 'Your session expired, please log in again.';
+  });
+
+  const queryUserId =
+    route.query.id && typeof route.query.id === 'string' ? route.query.id : '';
+  const queryCode =
+    route.query.code && typeof route.query.code === 'string'
+      ? base64Decode(route.query.code)
+      : '';
+
+  if (queryUserId && queryCode) {
+    type.value = LoginType.confirm;
+    message.value = queryIsRegister
+      ? 'Are you sure you want to verify your email address?'
+      : 'Are you sure you want to log in using your email address?';
+  }
+
+  const confirmAction = async () => {
+    try {
+      clearMessages();
+      buttonDisabled.value = true;
+      const result = await verify(queryUserId, queryCode);
+      buttonDisabled.value = false;
+      if (result.success) {
+        loggedIn.value = true;
+        router.replace({ query: {} });
+        resetState();
+        if (result.admin) {
+          router.push('/admin');
+        } else {
+          if (queryIsRegister || !userSet.value) {
+            type.value = LoginType.set;
+          } else {
+            type.value = LoginType.setAgain;
+            await setFieldsWithPrevious(LoginType.setAgain);
+          }
+        }
+      } else {
+        message.value =
+          'Could not ' +
+          (queryIsRegister ? 'verify' : 'log in using') +
+          ' your email address, please try again in a bit.';
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  };
+
+  const setAction = async () => {
+    try {
+      clearMessages();
+      let fail = false;
+      if (!newPassword.value) {
+        newPasswordMessage.value = 'The password cannot be empty';
+        fail = true;
+      }
+      if (!name.value) {
+        nameMessage.value = 'The name cannot be empty';
+        fail = true;
+      }
+      if (fail) {
+        return;
+      }
+      clearMessages();
+      buttonDisabled.value = true;
+      const result = await set(newPassword.value, name.value);
+      buttonDisabled.value = false;
+      resetState();
+      if (result) {
+        if (userConfirmed.value) {
+          router.push('/user');
+        } else {
+          router.push('/stateinfo');
+        }
+      } else if (userLoggedIn.value) {
+        message.value = 'Could not set values, please try again in a bit.';
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  };
+
+  const resetAction = async () => {
+    try {
+      clearMessages();
+      if (
+        !newPassword.value &&
+        (!name.value || name.value === previousName.value)
+      ) {
+        message.value =
+          'New password and name cannot both be empty or the same as before';
+        return;
+      }
+      clearMessages();
+      buttonDisabled.value = true;
+      const result = await reset(
+        newPassword.value,
+        name.value === previousName.value ? undefined : name.value
+      );
+      previousName.value = name.value;
+      buttonDisabled.value = false;
+      resetState();
+      if (result) {
+        if (userConfirmed.value) {
+          router.push('/user');
+        } else {
+          router.push('/stateinfo');
+        }
+      } else {
+        message.value = 'Could not set value, please try again in a bit.';
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  };
+
+  const changeAction = async () => {
+    try {
+      clearMessages();
+      let fail = false;
+      if (!password.value) {
+        passwordMessage.value = 'Password cannot be empty';
+        fail = true;
+      }
+      if (
+        !newPassword.value &&
+        (!name.value || name.value === previousName.value)
+      ) {
+        message.value =
+          'New password and name cannot both be empty or the same as before';
+        fail = true;
+      }
+      if (fail) {
+        return;
+      }
+      clearMessages();
+      buttonDisabled.value = true;
+      const result = await change(
+        password.value,
+        newPassword.value,
+        name.value === previousName.value ? undefined : name.value
+      );
+      previousName.value = name.value;
+      buttonDisabled.value = false;
+      resetState();
+      if (result) {
+        if (userConfirmed.value) {
+          router.push('/user');
+        } else {
+          router.push('/stateinfo');
+        }
+      } else {
+        message.value = 'Incorrect password';
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  };
 
   const emailLogInAction = async (isRegister = false) => {
     try {
+      clearMessages();
       let fail = false;
-      if (!email.value || !email.value.endsWith(EMAIL_ENDING)) {
-        emailMessage.value = 'E-Mail needs to be a valid student address';
+      if (
+        !email.value ||
+        !email.value.endsWith(EMAIL_ENDING) ||
+        !email.value.match(EMAIL_REGEX)
+      ) {
+        emailMessage.value = 'E-Mail needs to be a valid address';
         fail = true;
       }
       if (showCaptcha.value && captchaSitekey && !captchaToken) {
         captchaMessage.value = 'Captcha invalid';
         fail = true;
       }
-      message.value = '';
       if (fail) {
         return;
       }
-      captchaMessage.value = '';
-      emailMessage.value = '';
-      passwordMessage.value = '';
+      clearMessages();
+      buttonDisabled.value = true;
       const result = isRegister
         ? await register(
             email.value,
@@ -186,6 +320,7 @@
             email.value,
             showCaptcha.value && captchaSitekey ? captchaToken : undefined
           );
+      buttonDisabled.value = false;
       captchaExpired();
       if (result.success) {
         message.value =
@@ -203,18 +338,23 @@
         showCaptcha.value = result.showCaptcha;
       }
     } catch (e) {
+      console.error(e);
       throw e;
     }
   };
 
   const logInAction = async () => {
     try {
+      clearMessages();
       let fail = false;
       if (!password.value) {
         passwordMessage.value = 'Password cannot be empty';
         fail = true;
       }
-      if (email.value && !email.value.endsWith(EMAIL_ENDING)) {
+      if (
+        email.value &&
+        (!email.value.match(EMAIL_REGEX) || !email.value.endsWith(EMAIL_ENDING))
+      ) {
         emailMessage.value =
           'E-Mail needs to either be a valid student address or empty';
         fail = true;
@@ -223,24 +363,29 @@
         captchaMessage.value = 'Captcha invalid';
         fail = true;
       }
-      message.value = '';
       if (fail) {
         return;
       }
-      captchaMessage.value = '';
-      emailMessage.value = '';
-      passwordMessage.value = '';
+      clearMessages();
+      buttonDisabled.value = true;
       const result = await logIn(
         password.value,
         email.value || undefined,
         showCaptcha.value && captchaSitekey ? captchaToken : undefined
       );
+      buttonDisabled.value = false;
       captchaExpired();
+      resetState();
       if (result.success) {
+        loggedIn.value = true;
         if (result.admin) {
           router.push('/admin');
         } else {
-          router.push('/user');
+          if (userConfirmed.value) {
+            router.push('/user');
+          } else {
+            router.push('/stateinfo');
+          }
         }
       } else {
         const difference = result.nextTry.getTime() - Date.now();
@@ -252,6 +397,7 @@
         showCaptcha.value = result.showCaptcha;
       }
     } catch (e) {
+      console.error(e);
       throw e;
     }
   };
@@ -271,7 +417,7 @@
         changeAction();
         break;
       case LoginType.setAgain:
-        setAction();
+        resetAction();
         break;
       case LoginType.set:
         setAction();
@@ -280,7 +426,15 @@
         confirmAction();
         break;
       case LoginType.none:
-        router.push('/');
+        if (hasSession()) {
+          if (hasUserSession()) {
+            router.push('/user');
+          } else {
+            router.push('/admin');
+          }
+        } else {
+          router.push('/');
+        }
         break;
     }
   };
@@ -295,7 +449,7 @@
 </script>
 
 <template>
-  <div class="login">
+  <div class="content-base login">
     <label v-if="message" class="label general-label login-item">{{
       message
     }}</label>
@@ -314,8 +468,14 @@
           <div
             class="label-button"
             tabindex="0"
-            @click="type = LoginType.logIn"
-            @keyup.enter="type = LoginType.logIn"
+            @click="
+              clearMessages();
+              type = LoginType.logIn;
+            "
+            @keyup.enter="
+              clearMessages();
+              type = LoginType.logIn;
+            "
           >
             Log in with password instead
           </div>
@@ -342,8 +502,14 @@
         <div
           class="label-button"
           tabindex="0"
-          @click="type = LoginType.emailLogIn"
-          @keyup.enter="type = LoginType.emailLogIn"
+          @click="
+            clearMessages();
+            type = LoginType.emailLogIn;
+          "
+          @keyup.enter="
+            clearMessages();
+            type = LoginType.emailLogIn;
+          "
         >
           Log in without password (E-Mail) instead / reset password
         </div></label
@@ -360,6 +526,16 @@
         @keyup.enter="triggerAction()"
       />
     </template>
+    <label
+      v-if="type === LoginType.setAgain"
+      class="label change-label login-item"
+      ><router-link
+        :to="userConfirmed ? '/user' : 'stateinfo'"
+        class="label-button label-button-solo"
+      >
+        Don't want to change anything? Go to the user page instead.
+      </router-link></label
+    >
     <template
       v-if="
         type === LoginType.set ||
@@ -368,16 +544,9 @@
       "
     >
       <label class="label new-password-label login-item" for="new-password"
-        >Please (optionally) enter a new password<br />
-        <div
-          class="label-button"
-          tabindex="0"
-          @click="router.push('/user')"
-          @keyup.enter="router.push('/user')"
-        >
-          Go to user page instead.
-        </div></label
-      >
+        >Please{{ type === LoginType.set ? '' : ' (optionally)' }} enter a new
+        password{{ newPasswordMessage ? ': ' + newPasswordMessage : '' }}
+      </label>
       <input
         id="new-password"
         v-model="newPassword"
@@ -390,15 +559,9 @@
         @keyup.enter="triggerAction()"
       />
     </template>
-    <template
-      v-if="
-        type === LoginType.set ||
-        type === LoginType.setAgain ||
-        type === LoginType.change
-      "
-    >
+    <template v-if="type === LoginType.set">
       <label class="label name-label login-item" for="name"
-        >Please (optionally) enter your (new) name
+        >Please enter your name{{ nameMessage ? ': ' + nameMessage : '' }}
       </label>
       <input
         id="name"
@@ -448,8 +611,14 @@
       ><div
         class="label-button label-button-solo"
         tabindex="0"
-        @click="type = LoginType.register"
-        @keyup.enter="type = LoginType.register"
+        @click="
+          clearMessages();
+          type = LoginType.register;
+        "
+        @keyup.enter="
+          clearMessages();
+          type = LoginType.register;
+        "
       >
         No account yet? Register here
       </div></label
@@ -460,8 +629,15 @@
       ><div
         class="label-button label-button-solo"
         tabindex="0"
-        @click="type = LoginType.logIn"
-        @keyup.enter="type = LoginType.logIn"
+        :disabled="buttonDisabled"
+        @click="
+          clearMessages();
+          type = LoginType.logIn;
+        "
+        @keyup.enter="
+          clearMessages();
+          type = LoginType.logIn;
+        "
       >
         Already registered? Log in here
       </div></label
@@ -473,45 +649,40 @@
   .login {
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
-    width: calc(100% - 1rem);
-    height: calc(85vh - 1rem);
-    height: calc((85 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
-    padding: 0.5rem;
-    margin: 0;
-    border: none;
-  }
+    overflow-y: auto;
 
-  .login-item {
-    margin: 0.5rem;
-  }
+    .login-item {
+      margin: 0.5rem;
+    }
 
-  .label {
-    font-size: 1.2rem;
-    line-height: 1.2rem;
-    padding: 0;
-    text-align: center;
-    font-weight: bold;
-
-    .label-button {
-      font-size: 1.1rem;
-      font-weight: normal;
+    .label {
+      font-size: 1.2rem;
       line-height: 1.2rem;
-      color: rgb(226, 226, 226);
-      text-decoration: underline;
       padding: 0;
-      margin: 0;
-      margin-top: 0.5rem;
-      cursor: pointer;
+      text-align: center;
+      font-weight: bold;
 
-      &.label-button-solo {
+      .label-button {
+        font-size: 1.1rem;
+        font-weight: normal;
+        line-height: 1.2rem;
+        color: rgb(226, 226, 226);
+        text-decoration: underline;
+        padding: 0;
         margin: 0;
+        margin-top: 0.5rem;
+        cursor: pointer;
+
+        &.label-button-solo {
+          margin: 0;
+        }
       }
     }
   }
 
   .field {
+    font-family: Arial, Helvetica, sans-serif;
     height: 1rem;
     font-size: 1rem;
     line-height: 1rem;
@@ -525,6 +696,7 @@
   }
 
   .login-button {
+    color: #000000;
     height: 1.9rem;
     font-size: 1rem;
     line-height: 1rem;
@@ -538,11 +710,5 @@
     border: solid 0.05rem rgb(179, 179, 179);
     border-radius: 1rem;
     box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
-  }
-
-  @media (max-aspect-ratio: 1/1) {
-    .login {
-      height: calc(100% - 15vw - 1rem);
-    }
   }
 </style>

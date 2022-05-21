@@ -3,13 +3,8 @@
   import { onUpdated, ref } from 'vue';
   import moment from 'moment';
   import { loading, secret, settings } from '../settings';
-  import {
-    addPoints,
-    DisplayData,
-    getPoints,
-    subscribePoints,
-    zeroData,
-  } from '../data';
+  import { addPoints, getPoints, subscribePoints, zeroData } from '../data';
+  import type { DisplayData } from '../model';
 
   const props = defineProps({ allowEdit: { type: Boolean, default: false } });
 
@@ -105,24 +100,24 @@
     try {
       if (!!props.allowEdit) {
         if (
-          !settings.value.amount ||
-          isNaN(settings.value.amount) ||
-          typeof settings.value.amount !== 'number'
+          !settings.amount ||
+          isNaN(settings.amount) ||
+          typeof settings.amount !== 'number'
         ) {
           if (!displayErrorMessage.value) {
             setTimeout(() => (displayErrorMessage.value = true), 10);
           }
           errorMessage.value = 'Please enter a valid amount.';
         } else if (
-          !settings.value.date ||
-          isNaN(moment(settings.value.date).toDate().getTime())
+          !settings.date ||
+          isNaN(moment(settings.date).toDate().getTime())
         ) {
           if (!displayErrorMessage.value) {
             setTimeout(() => (displayErrorMessage.value = true), 10);
           }
           errorMessage.value = 'Please enter a valid date.';
         } else if (
-          !settings.value.reason &&
+          !settings.reason &&
           (errorMessage.value !==
             'Please enter a reason. Press again to send anyway.' ||
             pressedColor.value !== color)
@@ -139,25 +134,23 @@
           }
           await addPoints(
             color,
-            settings.value.amount || 0,
-            settings.value.date
-              ? moment(settings.value.date).toDate()
-              : undefined,
-            settings.value.owner,
-            settings.value.reason
+            settings.amount || 0,
+            settings.date ? moment(settings.date).toDate() : undefined,
+            settings.owner,
+            settings.reason
           );
-          if (!settings.value.keepAmount) {
-            settings.value.amount = 1;
+          if (!settings.keepAmount) {
+            settings.amount = 1;
           }
-          if (!settings.value.keepDate) {
-            const currentDate = moment(new Date()).format('YYYY-MM-DDThh:mm');
-            settings.value.date = currentDate;
+          if (!settings.keepDate) {
+            const currentDate = moment(new Date()).format('YYYY-MM-DDTHH:MM');
+            settings.date = currentDate;
           }
-          if (!settings.value.keepOwner) {
-            settings.value.owner = '';
+          if (!settings.keepOwner) {
+            settings.owner = '';
           }
-          if (!settings.value.keepReason) {
-            settings.value.reason = '';
+          if (!settings.keepReason) {
+            settings.reason = '';
           }
         }
         pressedColor.value = color;
@@ -176,7 +169,11 @@
 </script>
 
 <template>
-  <div v-if="displayActualData" class="content" :class="{ small: !!allowEdit }">
+  <div
+    v-if="displayActualData"
+    class="content-base content"
+    :class="{ small: !!allowEdit }"
+  >
     <div
       v-for="(data, index) in displayActualData"
       :key="data.color"
@@ -254,12 +251,6 @@
     display: grid;
     grid-template-rows: 1fr 1fr;
     grid-template-columns: 1fr 1fr 1fr;
-    width: calc(100% - 1rem);
-    height: calc(85vh - 1rem);
-    height: calc((85 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
-    padding: 0.5rem;
-    margin: 0;
-    border: none;
 
     .categories-wrapper {
       position: absolute;
@@ -295,11 +286,6 @@
           margin: 0.35rem;
         }
       }
-    }
-
-    &.small {
-      height: calc(70vh - 1rem);
-      height: calc((70 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
     }
   }
 
@@ -374,46 +360,6 @@
         .categories.active {
           opacity: 1;
         }
-      }
-    }
-  }
-
-  @media (min-aspect-ratio: 3/1) {
-    .content {
-      height: calc(78vh - 1rem);
-      height: calc((78 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
-
-      &.small {
-        height: calc(63vh - 1rem);
-        height: calc((63 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
-      }
-    }
-  }
-
-  @media (max-aspect-ratio: 1/1) {
-    .content {
-      height: calc(100vh - 15vw - 1rem);
-      height: calc((100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 15vw);
-
-      &.small {
-        height: calc(100vh - 28vw - 1rem);
-        height: calc(
-          (100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 28vw
-        );
-      }
-    }
-  }
-
-  @media (max-aspect-ratio: 9/16) {
-    .content {
-      height: calc(100vh - 22vw - 1rem);
-      height: calc((100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 22vw);
-
-      &.small {
-        height: calc(100vh - 35vw - 1rem);
-        height: calc(
-          (100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 35vw
-        );
       }
     }
   }
