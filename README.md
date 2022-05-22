@@ -273,6 +273,7 @@ STAIR_HOUSES_MAIL_USE_TLS="<Wether E-Mail should use TLS (false if omitted)>"
 STAIR_HOUSES_MAIL_USERNAME="<E-Mail server username (can be omitted to disable E-Mails)>"
 STAIR_HOUSES_MAIL_PASSWORD="<E-Mail server password (can be omitted to disable E-Mails)>"
 STAIR_HOUSES_MAIL_ADDRESS="<E-Mail sender address (can be omitted to disable E-Mails)>"
+STAIR_HOUSES_CSV_PATH="<Path to the csv file containing the students emails and team allocations (user actions will not work if omitted) (default: students_list.csv)>"
 ```
 
 These can also be set in a `.env` file in the directory it's run from. WARNING: Unlike in the frontend, they will be used for every run (including testing and development). They are not needed at compile time and can be omitted for most testing and development setups.

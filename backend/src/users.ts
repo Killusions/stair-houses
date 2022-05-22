@@ -1,6 +1,6 @@
 import { hash, verify } from 'argon2';
 import { generateFrontendLink } from './index.js';
-import type { StringSetting, UserInfoPrivate } from './model';
+import type { StringSetting, UserInfoPrivate, UsersList } from './model';
 import { getSettingsCollection, getUsersCollection } from './data.js';
 import { makeId } from './id.js';
 import { base64Encode } from './base64.js';
@@ -14,6 +14,90 @@ import {
   EMAIL_REGEX,
   ORG_NAME,
 } from './constants.js';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { readFile } from 'fs/promises';
+import { parse } from 'csv-parse';
+import 'dotenv/config';
+import { ReplaySubject } from 'rxjs';
+
+let usersList: ReplaySubject<UsersList | undefined> | undefined = undefined;
+let usersListError = false;
+let usersListDate: Date | null = null;
+
+const getUsersList = () =>
+  new Promise<UsersList | undefined>((resolve, reject) => {
+    try {
+      (async () => {
+        if (usersListError) {
+          resolve(undefined);
+          return;
+        }
+        if (!process.env.STAIR_HOUSES_CSV_PATH) {
+          console.log('No students list found');
+          resolve(undefined);
+          return;
+        }
+        if (
+          usersList &&
+          usersListDate &&
+          usersListDate.getTime() > Date.now() - 1000 * 60 * 60
+        ) {
+          usersList.subscribe((item) => {
+            resolve(item);
+          });
+          return;
+        }
+
+        usersList = new ReplaySubject();
+
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = dirname(__filename);
+
+        const studentsListFile = await readFile(
+          __dirname + '/../' + process.env.STAIR_HOUSES_CSV_PATH,
+          'utf-8'
+        );
+        if (studentsListFile) {
+          parse(studentsListFile, (err, rows: [string, string, string][]) => {
+            if (err) {
+              throw err;
+            }
+            const newUsersList = {} as UsersList;
+            rows.forEach((item) => {
+              if (usersList) {
+                newUsersList[item[0]] = {
+                  description: item[1],
+                  color: Object.values(COLORS).includes(item[2])
+                    ? Object.keys(COLORS).includes(item[2].toLocaleLowerCase())
+                      ? (item[2].toLocaleLowerCase() as keyof typeof COLORS)
+                      : undefined
+                    : undefined,
+                };
+              }
+            });
+            if (!usersList) {
+              usersList = new ReplaySubject();
+            }
+            usersList.next(newUsersList);
+            usersListDate = new Date();
+            resolve(newUsersList);
+          });
+        } else {
+          usersListError = true;
+          resolve(undefined);
+        }
+      })();
+    } catch (err) {
+      usersListError = true;
+      reject(err);
+    }
+  });
+
+//Todo: implement
+(async () => {
+  await getUsersList();
+})();
 
 export const checkEmail = (email?: string): boolean =>
   !!email &&

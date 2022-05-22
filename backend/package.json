@@ -39,6 +39,7 @@
     "@trpc/server": "^9.20.3",
     "argon2": "^0.28.5",
     "crypto-random-string": "^4.0.0",
+    "csv-parse": "^5.0.4",
     "dotenv": "^16.0.0",
     "fastify": "^3.27.4",
     "fastify-cors": "^6.0.3",

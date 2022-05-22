@@ -99,3 +99,5 @@ export type Setting =
   | NumberSetting
   | DateSetting
   | SubSetting;
+
+export type UsersList = Record<string, { description?: string, color?: keyof typeof COLORS }>
