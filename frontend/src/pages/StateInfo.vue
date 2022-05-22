@@ -7,12 +7,13 @@
     hasSetUserSession,
     hasUserSession,
   } from '../data';
-  import { resetSettings, resetState } from '../settings';
+  import { resetFilters, resetSettings, resetState } from '../settings';
   const router = useRouter();
 
   authFailure.subscribe(() => {
     resetState();
     resetSettings();
+    resetFilters();
     router.push('/login');
   });
 

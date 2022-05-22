@@ -28,6 +28,7 @@
     userSet,
     userConfirmed,
     userLoggedIn,
+    resetFilters,
   } from '../settings';
 
   enum LoginType {
@@ -111,7 +112,7 @@
   (async () => {
     try {
       if (
-        (await checkSessionAsync()) &&
+        (await checkSessionAsync(false, true)) &&
         (type.value !== LoginType.set || (await checkHasSetCode()))
       ) {
         await setFieldsWithPrevious(LoginType.change);
@@ -125,6 +126,7 @@
   authFailure.subscribe(() => {
     resetState();
     resetSettings();
+    resetFilters();
     type.value = LoginType.logIn;
     buttonDisabled.value = false;
     message.value = 'Your session expired, please log in again.';

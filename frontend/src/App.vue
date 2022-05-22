@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import HeaderBar from './components/HeaderBar.vue';
   import Footer from './components/Footer.vue';
-  import { loading } from './settings';
+  import { loading, ranking } from './settings';
 </script>
 
 <template>
@@ -18,7 +18,15 @@
     Loading scores...
   </div>
   <div class="container">
-    <HeaderBar> </HeaderBar>
+    <HeaderBar
+      :show-filter-panel="
+        ($router.currentRoute.value.path === '/' ||
+          $router.currentRoute.value.path === '/user' ||
+          $router.currentRoute.value.path === '/admin') &&
+        ranking
+      "
+    >
+    </HeaderBar>
     <router-view v-slot="{ Component }">
       <transition name="fade">
         <component :is="Component" :key="$route.name" />

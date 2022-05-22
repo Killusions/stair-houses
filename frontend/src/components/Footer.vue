@@ -4,6 +4,7 @@
   import { logOut } from '../data';
   import {
     loggedIn,
+    resetFilters,
     resetSettings,
     resetState,
     userLoggedIn,
@@ -21,6 +22,7 @@
         buttonDisabled = false;
         resetState();
         resetSettings();
+        resetFilters();
         router.push('/');
       }
     } catch (e) {

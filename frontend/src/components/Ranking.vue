@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { BehaviorSubject } from 'rxjs';
-  import { ref } from 'vue';
+  import { ref, watch } from 'vue';
   import {
     authFailure,
     checkSession,
@@ -9,15 +9,23 @@
     hasUserSession,
     isLoggingOut,
     subscribePoints,
+    setFilterData,
   } from '../data';
   import { useRouter } from 'vue-router';
   import type { DisplayData } from '../model';
-  import { resetSettings, resetState } from '../settings';
+  import {
+    filters,
+    resetFilters,
+    resetSettings,
+    resetState,
+  } from '../settings';
+  import moment from 'moment';
   const router = useRouter();
 
   authFailure.subscribe(() => {
     resetState();
     resetSettings();
+    resetFilters();
   });
 
   if (!isLoggingOut() && hasSession()) {
@@ -29,6 +37,67 @@
   } else {
     checkSession();
   }
+
+  let timeoutId = 0;
+  let ignoreNextChange = false;
+
+  watch(filters, () => {
+    if (ignoreNextChange) {
+      ignoreNextChange = false;
+      return;
+    }
+    ignoreNextChange = true;
+    let fail = false;
+    if (filters.dateStart) {
+      const dateStart = moment(filters.dateStart).toDate();
+      if (dateStart && !Number.isNaN(dateStart.getTime())) {
+        filters.dateStartParsed = dateStart;
+      } else {
+        filters.dateStartParsed = null;
+      }
+    } else {
+      filters.dateStartParsed = null;
+    }
+    if (filters.dateEnd) {
+      const dateEnd = moment(filters.dateEnd).toDate();
+      if (dateEnd && !Number.isNaN(dateEnd.getTime())) {
+        filters.dateEndParsed = dateEnd;
+      } else {
+        filters.dateEndParsed = null;
+      }
+    } else {
+      filters.dateEndParsed = null;
+    }
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+    }
+    if (fail) {
+      return;
+    }
+    if (filters.dateStartParsed || filters.dateEndParsed || filters.reason) {
+      timeoutId = window.setTimeout(() => {
+        timeoutId = 0;
+        if (
+          filters.dateStartParsed ||
+          filters.dateEndParsed ||
+          filters.reason
+        ) {
+          setFilterData(
+            filters.reason,
+            filters.dateStartParsed ?? undefined,
+            filters.dateEndParsed ?? undefined
+          );
+        } else {
+          setFilterData();
+        }
+      }, 1000);
+    } else {
+      timeoutId = window.setTimeout(() => {
+        timeoutId = 0;
+        setFilterData();
+      }, 1000);
+    }
+  });
 
   const displayData: BehaviorSubject<DisplayData> = subscribePoints();
 

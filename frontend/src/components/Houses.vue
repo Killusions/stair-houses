@@ -1,9 +1,14 @@
 <script setup lang="ts">
   import { BehaviorSubject, ReplaySubject } from 'rxjs';
-  import { onUpdated, ref } from 'vue';
+  import { onUpdated, ref, watch } from 'vue';
   import moment from 'moment';
-  import { loading, secret, settings } from '../settings';
-  import { addPoints, getPoints, subscribePoints, zeroData } from '../data';
+  import { filters, loading, secret, settings } from '../settings';
+  import {
+    addPoints,
+    getPoints,
+    setFilterData,
+    subscribePoints,
+  } from '../data';
   import type { DisplayData } from '../model';
 
   const props = defineProps({ allowEdit: { type: Boolean, default: false } });
@@ -79,7 +84,7 @@
 
   displayData.subscribe((data) => {
     displayActualData.value = data;
-    if (data !== zeroData) {
+    if (!data.some((item) => item.zeroData)) {
       if (loading.value) {
         loading.value = false;
       }
@@ -91,6 +96,67 @@
 
   const errorMessage = ref('');
   const displayErrorMessage = ref(false);
+
+  let timeoutId = 0;
+  let ignoreNextChange = false;
+
+  watch(filters, () => {
+    if (ignoreNextChange) {
+      ignoreNextChange = false;
+      return;
+    }
+    ignoreNextChange = true;
+    let fail = false;
+    if (filters.dateStart) {
+      const dateStart = moment(filters.dateStart).toDate();
+      if (dateStart && !Number.isNaN(dateStart.getTime())) {
+        filters.dateStartParsed = dateStart;
+      } else {
+        filters.dateStartParsed = null;
+      }
+    } else {
+      filters.dateStartParsed = null;
+    }
+    if (filters.dateEnd) {
+      const dateEnd = moment(filters.dateEnd).toDate();
+      if (dateEnd && !Number.isNaN(dateEnd.getTime())) {
+        filters.dateEndParsed = dateEnd;
+      } else {
+        filters.dateEndParsed = null;
+      }
+    } else {
+      filters.dateEndParsed = null;
+    }
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+    }
+    if (fail) {
+      return;
+    }
+    if (filters.dateStartParsed || filters.dateEndParsed || filters.reason) {
+      timeoutId = window.setTimeout(() => {
+        timeoutId = 0;
+        if (
+          filters.dateStartParsed ||
+          filters.dateEndParsed ||
+          filters.reason
+        ) {
+          setFilterData(
+            filters.reason,
+            filters.dateStartParsed ?? undefined,
+            filters.dateEndParsed ?? undefined
+          );
+        } else {
+          setFilterData();
+        }
+      }, 1000);
+    } else {
+      timeoutId = window.setTimeout(() => {
+        timeoutId = 0;
+        setFilterData();
+      }, 1000);
+    }
+  });
 
   getPoints();
 

@@ -7,7 +7,6 @@ import Admin from './pages/Admin.vue';
 import User from './pages/User.vue';
 import Add from './pages/Add.vue';
 import Login from './pages/Login.vue';
-import Ranking from './components/Ranking.vue';
 import StateInfo from './pages/StateInfo.vue';
 
 import vhCheck from 'vh-check';
@@ -22,7 +21,6 @@ const routes = [
   { path: '/admin', component: Admin },
   { path: '/user', component: User },
   { path: '/login', component: Login },
-  { path: '/ranking', component: Ranking },
   { path: '/add', component: Add },
   { path: '/stateinfo', component: StateInfo },
 ];

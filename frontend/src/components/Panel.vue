@@ -1,5 +1,11 @@
 <script setup lang="ts">
+  import moment from 'moment';
   import { settings } from '../settings';
+
+  if (!settings.date) {
+    const currentDate = moment(new Date()).format('YYYY-MM-DDTHH:MM');
+    settings.date = currentDate;
+  }
 </script>
 
 <template>

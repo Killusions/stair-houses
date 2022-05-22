@@ -11,8 +11,15 @@ export interface PointsCategory {
   amount: number;
 }
 
+export interface PointsCategoryWithDate extends PointsCategory {
+  name: string;
+  amount: number;
+  date: Date;
+}
+
 export interface PointsWithStats extends Points {
   categories: PointsCategory[];
+  datedCategories: PointsCategoryWithDate[];
 }
 
 export interface PointEvent {

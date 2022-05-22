@@ -7,10 +7,30 @@
     userSet,
     ranking,
     secret,
+    filters,
   } from '../settings';
   import { APP_NAME } from '../../../backend/src/constants';
+  import { onUnmounted, ref } from 'vue';
 
   defineProps({ showFilterPanel: { type: Boolean, default: false } });
+
+  let showModal = ref(false);
+
+  const clickModal = () => {
+    showModal.value = !showModal.value;
+  };
+
+  const eventListener = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      showModal.value = false;
+    }
+  };
+
+  window.addEventListener('keyup', eventListener);
+
+  onUnmounted(() => {
+    window.removeEventListener('keyup', eventListener);
+  });
 </script>
 
 <template>
@@ -25,7 +45,11 @@
     </router-link>
     <div class="right-hand-buttons">
       <router-link
-        v-if="$router.currentRoute.value.path === '/' && !loggedIn"
+        v-if="
+          $router.currentRoute.value.path === '/' &&
+          !loggedIn &&
+          !showFilterPanel
+        "
         to="/login"
         class="view-toggle"
       >
@@ -100,11 +124,275 @@
       >
         {{ ranking ? 'Ranking' : 'Overview' }}
       </button>
+      <button
+        v-if="showFilterPanel"
+        class="showModal-button"
+        :class="{
+          warning:
+            (filters.dateStart && !filters.dateStartParsed) ||
+            (filters.dateEnd && !filters.dateEndParsed) ||
+            (filters.dateStartParsed &&
+              filters.dateEndParsed &&
+              filters.dateStartParsed.getTime() >
+                filters.dateEndParsed.getTime()),
+        }"
+        @click="clickModal()"
+      >
+        Filters
+        <span class="icon icon-pencil"></span>
+      </button>
     </div>
+    <Transition v-if="showFilterPanel" name="modal">
+      <div v-if="showModal" class="modal-mask">
+        <div class="modal-wrapper">
+          <div class="modal-container">
+            <div class="modal-header">
+              <slot name="header">Search Settings</slot>
+            </div>
+            <div class="modal-body">
+              <div class="date-start-container input-container">
+                <label for="date-start"
+                  >Date from{{
+                    filters.dateStart && !filters.dateStartParsed
+                      ? ': Please enter a valid date'
+                      : ''
+                  }}</label
+                >
+                <div class="date-inner-container">
+                  <input
+                    id="date-start"
+                    v-model="filters.dateStart"
+                    type="date"
+                    name="date-start"
+                    placeholder="Date"
+                    :class="{
+                      warning: filters.dateStart && !filters.dateStartParsed,
+                    }"
+                  />
+                </div>
+              </div>
+              <div class="date-end-container input-container">
+                <label for="date-end"
+                  >Date to{{
+                    filters.dateEnd && !filters.dateEndParsed
+                      ? ': Please enter a valid date'
+                      : filters.dateStartParsed &&
+                        filters.dateEndParsed &&
+                        filters.dateStartParsed.getTime() >
+                          filters.dateEndParsed.getTime()
+                      ? ': The end date needs to be before the start date'
+                      : ''
+                  }}</label
+                >
+                <div class="date-inner-container">
+                  <input
+                    id="date-end"
+                    v-model="filters.dateEnd"
+                    type="date"
+                    name="date-end"
+                    placeholder="Date"
+                    :class="{
+                      warning:
+                        (filters.dateEnd && !filters.dateEndParsed) ||
+                        (filters.dateStartParsed &&
+                          filters.dateEndParsed &&
+                          filters.dateStartParsed.getTime() >
+                            filters.dateEndParsed.getTime()),
+                    }"
+                  />
+                </div>
+              </div>
+              <div class="reason-container input-container">
+                <label for="reason">Reason</label>
+                <input
+                  id="reason"
+                  v-model="filters.reason"
+                  type="text"
+                  name="reason"
+                  placeholder="General"
+                  maxlength="1000"
+                />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="modal-default-button" @click="clickModal()">
+                <span class="icon button-icon icon-cancel"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <style scoped lang="scss">
+  .showModal-button {
+    margin: 0;
+    min-height: 2.1rem;
+    height: min-content;
+    font-size: 1rem;
+    line-height: 1.5rem;
+    font-weight: bold;
+    padding: 0.15rem;
+    padding-left: 0.45rem;
+    padding-right: 0.45rem;
+    background-color: #ffffff;
+    border: solid 0.1rem rgb(179, 179, 179);
+    border-radius: 1rem;
+    box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    text-decoration: none;
+    color: #000000;
+
+    &.warning {
+      border: solid 0.3vh rgb(194, 0, 0);
+      border: solid calc((0.3 * (100vh - var(--vh-offset, 0px)) / 100))
+        rgb(194, 0, 0);
+    }
+  }
+  .modal-mask {
+    position: fixed;
+    z-index: 9998;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    transition: opacity 0.3s ease;
+  }
+
+  .modal-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal-container {
+    height: 80%;
+    width: 70%;
+    padding: 1rem;
+    background-color: rgb(126, 126, 126);
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
+    transition: all 0.3s ease;
+    overflow-y: auto;
+    border: 0.125rem solid rgb(179, 179, 179);
+  }
+
+  .modal-header {
+    font-size: 2rem;
+  }
+
+  .modal-body {
+    margin: 20px 0;
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
+    justify-items: center;
+    align-items: center;
+  }
+
+  .modal-default-button {
+    float: right;
+    height: 2.1rem;
+    font-size: 1rem;
+    line-height: 1rem;
+    font-weight: bold;
+    padding: 0;
+    background-color: #ffffff;
+    border: solid 0.1rem rgb(179, 179, 179);
+    border-radius: 1rem;
+    box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    text-decoration: none;
+    color: #000000;
+  }
+
+  .modal-enter-from {
+    opacity: 0;
+  }
+
+  .modal-leave-to {
+    opacity: 0;
+  }
+
+  .modal-enter-from .modal-container,
+  .modal-leave-to .modal-container {
+    -webkit-transform: scale(1.1);
+    transform: scale(1.1);
+  }
+
+  .input-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 90%;
+    padding: 0.5rem;
+    font-size: 1.25rem;
+    line-height: 1.25rem;
+
+    label {
+      margin-left: 0.5vh;
+      margin-left: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+      font-weight: bold;
+    }
+
+    > * {
+      margin-top: 1vh;
+      margin-top: calc((1 * (100vh - var(--vh-offset, 0px)) / 100));
+    }
+
+    > *:first-child {
+      margin-top: 0;
+    }
+
+    input {
+      font-family: Arial, Helvetica, sans-serif;
+      height: 1rem;
+      font-size: 1rem;
+      line-height: 1rem;
+      width: 90%;
+      padding: 0.5rem;
+      margin: 0.5vh;
+      margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+      margin-top: 1.5vh;
+      margin-top: calc((1.5 * (100vh - var(--vh-offset, 0px)) / 100));
+      border: solid 0.2vh rgb(179, 179, 179);
+      border: solid calc((0.2 * (100vh - var(--vh-offset, 0px)) / 100))
+        rgb(179, 179, 179);
+      border-radius: 2vh;
+      border-radius: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
+      box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+
+      &.warning {
+        border: solid 0.3vh rgb(194, 0, 0);
+        border: solid calc((0.3 * (100vh - var(--vh-offset, 0px)) / 100))
+          rgb(194, 0, 0);
+      }
+
+      &.date {
+        margin: 0;
+        margin-top: 0;
+      }
+    }
+
+    .date-inner-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      margin: 0.5vh;
+      margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+      margin-top: 1.5vh;
+      margin-top: calc((1.5 * (100vh - var(--vh-offset, 0px)) / 100));
+      padding: 0;
+      border: none;
+    }
+  }
   .header {
     display: flex;
     flex-direction: row;
@@ -195,6 +483,43 @@
   }
 
   @media (max-aspect-ratio: 1/1) {
+    .modal-body {
+      grid-template-rows: 1fr 1fr 1fr;
+      grid-template-columns: 1fr;
+    }
+
+    .input-container {
+      padding: 0.6rem;
+
+      label {
+        margin-left: 0.5vw;
+      }
+
+      > * {
+        margin-top: 1vw;
+      }
+
+      > *:first-child {
+        margin-top: 0;
+      }
+
+      input {
+        font-family: Arial, Helvetica, sans-serif;
+        margin: 0.5vw;
+        margin-top: 1.5vw;
+        border: solid 0.2vw rgb(179, 179, 179);
+        border-radius: 2vw;
+
+        &.warning {
+          border: solid 0.3vw rgb(194, 0, 0);
+        }
+      }
+
+      .date-inner-container {
+        margin: 0.5vw;
+        margin-top: 1.5vw;
+      }
+    }
     .header {
       height: 12vw;
     }

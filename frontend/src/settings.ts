@@ -38,6 +38,14 @@ export const resetSettings = () => {
   settings.keepReason = false;
 };
 
+export const resetFilters = () => {
+  filters.reason = '';
+  filters.dateStart = '';
+  filters.dateStartParsed = null;
+  filters.dateEnd = '';
+  filters.dateEndParsed = null;
+};
+
 export const settings = reactive({
   amount: 1,
   keepAmount: false,
@@ -47,4 +55,12 @@ export const settings = reactive({
   keepOwner: false,
   reason: '',
   keepReason: false,
+});
+
+export const filters = reactive({
+  reason: '',
+  dateStart: '',
+  dateStartParsed: null as Date | null,
+  dateEnd: '',
+  dateEndParsed: null as Date | null,
 });

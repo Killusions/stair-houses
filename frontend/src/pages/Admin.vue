@@ -2,7 +2,12 @@
   import Panel from '../components/Panel.vue';
   import Houses from '../components/Houses.vue';
   import Ranking from '../components/Ranking.vue';
-  import { ranking, resetSettings, resetState } from '../settings';
+  import {
+    ranking,
+    resetFilters,
+    resetSettings,
+    resetState,
+  } from '../settings';
   import { useRouter } from 'vue-router';
   import { authFailure, checkSession } from '../data';
   const router = useRouter();
@@ -10,6 +15,7 @@
   authFailure.subscribe(() => {
     resetState();
     resetSettings();
+    resetFilters();
     router.push('/login');
   });
 
@@ -19,8 +25,7 @@
 <template>
   <div class="page">
     <Panel v-if="!ranking"> </Panel>
-    <Ranking v-if="ranking" :allow-edit="!ranking" :show-filter-panel="true">
-    </Ranking>
+    <Ranking v-if="ranking" :allow-edit="!ranking"> </Ranking>
     <Houses v-else :allow-edit="!ranking"> </Houses>
   </div>
 </template>

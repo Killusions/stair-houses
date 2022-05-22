@@ -1,5 +1,10 @@
 <script setup lang="ts">
-  import { resetSettings, resetState, ranking } from '../settings';
+  import {
+    resetSettings,
+    resetState,
+    ranking,
+    resetFilters,
+  } from '../settings';
   import Houses from '../components/Houses.vue';
   import Ranking from '../components/Ranking.vue';
   import {
@@ -15,6 +20,7 @@
   authFailure.subscribe(() => {
     resetState();
     resetSettings();
+    resetFilters();
   });
 
   if (!isLoggingOut() && hasSession()) {
@@ -24,17 +30,13 @@
       router.push('/admin');
     }
   } else {
-    checkSession();
+    checkSession(false, true);
   }
 </script>
 
 <template>
   <div class="page">
-    <Ranking
-      v-if="ranking"
-      :allow-edit="false"
-      :show-filter-panel="true"
-    ></Ranking>
+    <Ranking v-if="ranking" :allow-edit="false"></Ranking>
     <Houses v-else :allow-edit="false"> </Houses>
   </div>
 </template>

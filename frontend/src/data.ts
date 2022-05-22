@@ -96,6 +96,7 @@ authFailure.subscribe(() => {
 const clearAll = () => {
   clearSetCode();
   clearUserInfo();
+  clearFilters();
 };
 
 const clearUserInfo = () => {
@@ -107,6 +108,7 @@ let points: PointsWithStats[] = Object.keys(COLORS).map((item) => ({
   points: 0,
   lastChanged: new Date(0),
   categories: [],
+  datedCategories: [],
 }));
 
 const placesStrings = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
@@ -119,6 +121,59 @@ const maxGrowScale = 1.5;
 let previousMaxIndex = 0;
 
 const randomOrder: { [key: string]: number } = {};
+
+let filterReason = undefined as string | undefined;
+let filterDateStart = undefined as Date | undefined;
+let filterDateEnd = undefined as Date | undefined;
+
+export const setFilterData = (
+  reason?: string,
+  dateStart?: Date,
+  dateEnd?: Date
+) => {
+  filterReason = reason;
+  filterDateStart = dateStart;
+  filterDateEnd = dateEnd;
+  filterData(filterReason, filterDateStart, filterDateEnd);
+};
+
+const clearFilters = () => {
+  filterReason = undefined;
+  filterDateStart = undefined;
+  filterDateEnd = undefined;
+  if (!dataSubject.value || !dataSubject.value.some((item) => item.zeroData)) {
+    filterData();
+  }
+};
+
+const filterData = (reason?: string, dateStart?: Date, dateEnd?: Date) => {
+  if (reason || dateStart || dateEnd) {
+    points = points.map((item) => {
+      const datedCategories = item.datedCategories.filter(
+        (category) =>
+          (!reason || category.name === reason) &&
+          (!dateStart || category.date.getTime() >= dateStart.getTime()) &&
+          (!dateEnd || category.date.getTime() <= dateEnd.getTime())
+      );
+      const categoriesList = [
+        ...new Set(datedCategories.map((category) => category.name)),
+      ];
+      const categories = categoriesList.map((categoryName) => ({
+        name: categoryName,
+        amount: datedCategories
+          .filter((category) => category.name === categoryName)
+          .map((category) => category.amount)
+          .reduce((a, b) => a + b, 0),
+      }));
+      const numberOfPoints = datedCategories
+        .map((category) => category.amount)
+        .reduce((a, b) => a + b, 0);
+      return { ...item, points: numberOfPoints, categories, datedCategories };
+    });
+  }
+  const displayData = processData(points);
+  dataSubject.next(displayData);
+};
 
 const processData = (data: PointsWithStats[], zero = false): DisplayData => {
   const highestPoints = Math.max(...data.map((item) => item.points));
@@ -209,9 +264,10 @@ const processData = (data: PointsWithStats[], zero = false): DisplayData => {
       badgeClass = 'last';
     }
 
-    const previousColor = zero
-      ? item.color
-      : dataSubject.value[index]?.color ?? item.color;
+    const previousColor =
+      zero || dataSubject.value[index].zeroData
+        ? item.color
+        : dataSubject.value[index]?.color ?? item.color;
     const returnObject: DisplayColor = {
       color: item.color,
       colorString: item.color.charAt(0).toUpperCase() + item.color.slice(1),
@@ -226,6 +282,7 @@ const processData = (data: PointsWithStats[], zero = false): DisplayData => {
       badgeString,
       badgeClass,
       categories: item.categories.sort((a, b) => b.amount - a.amount),
+      zeroData: zero || undefined,
     };
     return returnObject;
   });
@@ -233,7 +290,7 @@ const processData = (data: PointsWithStats[], zero = false): DisplayData => {
   return displayData;
 };
 
-export const zeroData = processData(points, true);
+const zeroData = processData(points, true);
 
 const dataSubject = new BehaviorSubject(zeroData);
 
@@ -252,8 +309,7 @@ export const getPoints = async () => {
     const data = await client.query('getPoints');
     if (isDataNewer(data)) {
       points = data;
-      const displayData = processData(points);
-      dataSubject.next(displayData);
+      filterData(filterReason, filterDateStart, filterDateEnd);
     }
     return dataSubject.value;
   } catch (e) {
@@ -288,8 +344,7 @@ export const addPoints = async (
     }
     if (isDataNewer(data)) {
       points = data;
-      const displayData = processData(points);
-      dataSubject.next(displayData);
+      filterData(filterReason, filterDateStart, filterDateEnd);
     }
     return dataSubject.value;
   } catch (e: unknown) {
@@ -307,8 +362,7 @@ export const subscribePoints = () => {
             const newData = data.data;
             if (isDataNewer(newData)) {
               points = newData;
-              const displayData = processData(points);
-              dataSubject.next(displayData);
+              filterData(filterReason, filterDateStart, filterDateEnd);
             }
           }
         },
@@ -321,9 +375,11 @@ export const subscribePoints = () => {
   return dataSubject;
 };
 
-export const checkSessionAsync = async (admin = false) => {
+export const checkSessionAsync = async (admin = false, skipLocal = false) => {
   if (!hasSession(admin)) {
-    authFailure.next();
+    if (!skipLocal || sessionId) {
+      authFailure.next();
+    }
     return false;
   }
   const data = await client.mutation('checkSession', {
@@ -352,10 +408,10 @@ export const checkSessionAsync = async (admin = false) => {
   return true;
 };
 
-export const checkSession = (admin = false) => {
+export const checkSession = (admin = false, skipLocal = false) => {
   (async () => {
     try {
-      await checkSessionAsync(admin);
+      await checkSessionAsync(admin, skipLocal);
     } catch (e: unknown) {
       console.error(e);
       throw e;
@@ -603,7 +659,6 @@ export const getUserInfo = async () => {
     });
 
     if (result) {
-      console.log(result);
       userInfo = result;
       infosSet = !!result.infosSet;
       houseConfirmed = result.houseConfirmed;

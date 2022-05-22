@@ -1,7 +1,12 @@
 <script setup lang="ts">
   import Houses from '../components/Houses.vue';
   import Ranking from '../components/Ranking.vue';
-  import { resetSettings, ranking, resetState } from '../settings';
+  import {
+    resetSettings,
+    ranking,
+    resetState,
+    resetFilters,
+  } from '../settings';
   import { useRouter } from 'vue-router';
   import {
     authFailure,
@@ -14,6 +19,7 @@
   authFailure.subscribe(() => {
     resetState();
     resetSettings();
+    resetFilters();
     router.push('/login');
   });
 
@@ -28,8 +34,7 @@
 
 <template>
   <div class="page">
-    <Ranking v-if="ranking" :allow-edit="false" :show-filter-panel="true">
-    </Ranking>
+    <Ranking v-if="ranking" :allow-edit="false"></Ranking>
     <Houses v-else :small="true" :allow-edit="false"> </Houses>
   </div>
 </template>
