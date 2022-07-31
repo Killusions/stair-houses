@@ -4,7 +4,7 @@ import { createTRPCClient } from '@trpc/client';
 import type {
   PointsCategory,
   PointsWithStats,
-  UserInfoPrivate,
+  UserInfoCombined,
 } from '../../backend/src/model';
 import { BehaviorSubject, Subject } from 'rxjs';
 import superjson from 'superjson';
@@ -35,15 +35,14 @@ let sessionId = localStorage.getItem('session') ?? '';
 let isAdmin = localStorage.getItem('admin') === 'true';
 let sessionUserId = localStorage.getItem('sessionUserId') ?? '';
 let infosSet = !!localStorage.getItem('infosSet') ?? false;
-let houseConfirmed =
-  (localStorage.getItem('houseConfirmed') as keyof typeof COLORS | undefined) ||
+let currentHouse =
+  (localStorage.getItem('currentHouse') as keyof typeof COLORS | undefined) ||
   undefined;
-let current = !!localStorage.getItem('current') ?? false;
 
 let setCode = '';
 let setExpired = 0;
 
-let userInfo: UserInfoPrivate | null = null;
+let userInfo: UserInfoCombined | null = null;
 
 export const isLoggingOut = () => {
   return loggingOut;
@@ -53,12 +52,8 @@ export const hasSession = (admin = false) => {
   return !!sessionId && sessionExpires > Date.now() && (!admin || isAdmin);
 };
 
-export const hasConfirmedCurrentUserSession = () => {
-  return hasConfirmedUserSession() && current;
-};
-
 export const hasConfirmedUserSession = () => {
-  return hasSetUserSession() && houseConfirmed;
+  return hasSetUserSession() && currentHouse;
 };
 
 export const hasSetUserSession = () => {
@@ -393,15 +388,13 @@ export const checkSessionAsync = async (admin = false, skipLocal = false) => {
     isAdmin = false;
     sessionExpires = 0;
     infosSet = false;
-    houseConfirmed = undefined;
-    current = false;
+    currentHouse = undefined;
     localStorage.setItem('session', '');
     localStorage.setItem('sessionUserId', '');
     localStorage.setItem('sessionExpires', '');
     localStorage.setItem('admin', '');
     localStorage.setItem('infosSet', '');
-    localStorage.setItem('houseConfirmed', '');
-    localStorage.setItem('current', '');
+    localStorage.setItem('currentHouse', '');
     authFailure.next();
     return false;
   }
@@ -464,25 +457,21 @@ export const logIn = async (
       sessionUserId = result.userId ?? '';
       sessionExpires = Date.now() + 1000 * 60 * 60 * 23.5;
       infosSet = !!result.infosSet;
-      houseConfirmed = result.houseConfirmed;
-      current = !!result.current;
+      currentHouse = result.currentHouse;
     }
-
     if (sessionId) {
       localStorage.setItem('sessionUserId', sessionUserId);
       localStorage.setItem('session', sessionId);
       localStorage.setItem('sessionExpires', sessionExpires.toString());
       localStorage.setItem('admin', isAdmin ? 'true' : '');
       localStorage.setItem('infosSet', infosSet ? 'true' : '');
-      localStorage.setItem('houseConfirmed', houseConfirmed || '');
-      localStorage.setItem('current', current ? 'true' : '');
+      localStorage.setItem('currentHouse', currentHouse || '');
     }
     return {
       success: result.success,
       admin: result.admin,
       infosSet: result.infosSet,
-      houseConfirmed: result.houseConfirmed,
-      current: result.current,
+      currentHouse: result.currentHouse,
       showCaptcha: result.showCaptcha,
       nextTry: new Date(result.nextTry),
     };
@@ -504,8 +493,7 @@ export const verify = async (userId: string, code: string) => {
       sessionExpires = Date.now() + 1000 * 60 * 60 * 23.5;
       sessionUserId = userId ?? '';
       infosSet = !!result.infosSet;
-      houseConfirmed = result.houseConfirmed;
-      current = !!result.current;
+      currentHouse = result.currentHouse;
       setCode = result.code ?? '';
       setExpired = Date.now() + 1000 * 60 * 25 ?? 0;
     }
@@ -516,15 +504,13 @@ export const verify = async (userId: string, code: string) => {
       localStorage.setItem('sessionExpires', sessionExpires.toString());
       localStorage.setItem('admin', isAdmin ? 'true' : '');
       localStorage.setItem('infosSet', infosSet ? 'true' : '');
-      localStorage.setItem('houseConfirmed', houseConfirmed || '');
-      localStorage.setItem('current', current ? 'true' : '');
+      localStorage.setItem('currentHouse', currentHouse || '');
     }
     return {
       success: result.success,
       admin: result.admin,
       infosSet: result.infosSet,
-      houseConfirmed: result.houseConfirmed,
-      current: result.current,
+      currentHouse: result.currentHouse,
       code: result.code,
     };
   } catch (e) {
@@ -556,11 +542,9 @@ export const set = async (newPassword: string, name: string) => {
     if (result) {
       userInfo = result;
       infosSet = !!result.infosSet;
-      houseConfirmed = result.houseConfirmed;
-      current = !!result.current;
+      currentHouse = result.currentHouse;
       localStorage.setItem('infosSet', infosSet ? 'true' : '');
-      localStorage.setItem('houseConfirmed', houseConfirmed || '');
-      localStorage.setItem('current', current ? 'true' : '');
+      localStorage.setItem('currentHouse', currentHouse || '');
       clearSetCode();
     }
     return result;
@@ -593,11 +577,9 @@ export const reset = async (newPassword?: string, name?: string) => {
     if (result) {
       userInfo = result;
       infosSet = !!result.infosSet;
-      houseConfirmed = result.houseConfirmed;
-      current = !!result.current;
+      currentHouse = result.currentHouse;
       localStorage.setItem('infosSet', infosSet ? 'true' : '');
-      localStorage.setItem('houseConfirmed', houseConfirmed || '');
-      localStorage.setItem('current', current ? 'true' : '');
+      localStorage.setItem('currentHouse', currentHouse || '');
       clearSetCode();
     }
     return result;
@@ -629,11 +611,9 @@ export const change = async (
     if (result) {
       userInfo = result;
       infosSet = !!result.infosSet;
-      houseConfirmed = result.houseConfirmed;
-      current = !!result.current;
+      currentHouse = result.currentHouse;
       localStorage.setItem('infosSet', infosSet ? 'true' : '');
-      localStorage.setItem('houseConfirmed', houseConfirmed || '');
-      localStorage.setItem('current', current ? 'true' : '');
+      localStorage.setItem('currentHouse', currentHouse || '');
     }
     return result;
   } catch (e) {
@@ -661,11 +641,9 @@ export const getUserInfo = async () => {
     if (result) {
       userInfo = result;
       infosSet = !!result.infosSet;
-      houseConfirmed = result.houseConfirmed;
-      current = !!result.current;
+      currentHouse = result.currentHouse;
       localStorage.setItem('infosSet', infosSet ? 'true' : '');
-      localStorage.setItem('houseConfirmed', houseConfirmed || '');
-      localStorage.setItem('current', current ? 'true' : '');
+      localStorage.setItem('currentHouse', currentHouse || '');
     }
     return result;
   } catch (e) {
@@ -684,15 +662,13 @@ export const logOut = async () => {
     isAdmin = false;
     sessionExpires = 0;
     infosSet = false;
-    houseConfirmed = undefined;
-    current = false;
+    currentHouse = undefined;
     localStorage.setItem('sessionUserId', '');
     localStorage.setItem('session', '');
     localStorage.setItem('sessionExpires', '');
     localStorage.setItem('admin', '');
     localStorage.setItem('infosSet', '');
-    localStorage.setItem('houseConfirmed', '');
-    localStorage.setItem('current', '');
+    localStorage.setItem('currentHouse', '');
     loggingOut = false;
   } catch (e) {
     console.error(e);

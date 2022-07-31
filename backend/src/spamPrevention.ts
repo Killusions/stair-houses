@@ -21,8 +21,7 @@ export const timeOutCaptchaAndResponse = async (
     admin?: boolean;
     userId?: string;
     infosSet?: boolean;
-    houseConfirmed?: keyof typeof COLORS;
-    current?: boolean;
+    currentHouse?: keyof typeof COLORS;
   }>,
   response?: boolean
 ): Promise<{
@@ -32,8 +31,7 @@ export const timeOutCaptchaAndResponse = async (
   admin?: boolean;
   userId?: string;
   infosSet?: boolean;
-  houseConfirmed?: keyof typeof COLORS;
-  current?: boolean;
+  currentHouse?: keyof typeof COLORS;
 }> => {
   const timeOut = passwordTimeOuts[ip];
   let needsCaptcha = false;
@@ -151,8 +149,7 @@ export const timeOutCaptchaAndResponse = async (
         admin: true,
         userId: result.userId,
         infosSet: result.infosSet,
-        houseConfirmed: result.houseConfirmed,
-        current: result.current,
+        currentHouse: result.currentHouse,
       };
     }
     return {
@@ -164,8 +161,7 @@ export const timeOutCaptchaAndResponse = async (
       nextTry: new Date(),
       userId: result.userId,
       infosSet: result.infosSet,
-      houseConfirmed: result.houseConfirmed,
-      current: result.current,
+      currentHouse: result.currentHouse,
     };
   }
   return {

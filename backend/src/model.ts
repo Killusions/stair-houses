@@ -74,8 +74,10 @@ export interface UserInfo {
 
 export interface UserInfoPrivate extends UserInfo {
   infosSet: boolean;
-  houseConfirmed?: keyof typeof COLORS;
-  current: boolean;
+}
+
+export interface UserInfoCombined extends UserInfoPrivate {
+  currentHouse?: keyof typeof COLORS;
 }
 
 export interface User extends UserInfoPrivate {
@@ -100,4 +102,9 @@ export type Setting =
   | DateSetting
   | SubSetting;
 
-export type UsersList = Record<string, { description?: string, color?: keyof typeof COLORS }>
+export interface StudentInfo {
+  email: string;
+  description: string;
+  color: keyof typeof COLORS;
+  date: Date;
+}

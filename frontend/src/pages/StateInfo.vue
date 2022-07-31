@@ -29,8 +29,8 @@
     try {
       const result = await getUserInfo();
       if (result) {
-        if (result.houseConfirmed) {
-          alert('You are in the ' + result.houseConfirmed + ' house.');
+        if (result.currentHouse) {
+          alert('You are in the ' + result.currentHouse + ' house.');
         } else {
           alert('Your house is not confirmed, please contact us.');
         }

@@ -1,7 +1,14 @@
 import { Collection, Db, MongoClient } from 'mongodb';
 import { COLORS } from './constants.js';
 import { makeId } from './id.js';
-import type { PointEvent, Points, Setting, StringSetting, User } from './model';
+import type {
+  PointEvent,
+  Points,
+  Setting,
+  StringSetting,
+  StudentInfo,
+  User,
+} from './model';
 import { hashPassword } from './users.js';
 import 'dotenv/config';
 
@@ -38,6 +45,7 @@ const pointsCollectionName = 'points';
 const pointEventsCollectionName = 'pointEvents';
 const settingsCollectionName = 'settings';
 const usersCollectionName = 'users';
+const studentsCollectionName = 'students';
 
 let connected = false;
 let connecting = false;
@@ -53,6 +61,7 @@ let pointsCollection: Collection<Points> | undefined = undefined;
 let pointEventsCollection: Collection<PointEvent> | undefined = undefined;
 let settingsCollection: Collection<Setting> | undefined = undefined;
 let usersCollection: Collection<User> | undefined = undefined;
+let studentsCollection: Collection<StudentInfo> | undefined = undefined;
 
 const ensureDBConnection = () => {
   if (connected) {
@@ -100,6 +109,7 @@ const ensureDBConnection = () => {
         );
         settingsCollection = db.collection<Setting>(settingsCollectionName);
         usersCollection = db.collection<User>(usersCollectionName);
+        studentsCollection = db.collection<StudentInfo>(studentsCollectionName);
 
         const passwordObject = (await settingsCollection.findOne({
           key: 'password',
@@ -208,4 +218,9 @@ export const getSettingsCollection = async () => {
 export const getUsersCollection = async () => {
   await ensureDBConnection();
   return usersCollection as Collection<User>;
+};
+
+export const getStudentsCollection = async () => {
+  await ensureDBConnection();
+  return studentsCollection as Collection<StudentInfo>;
 };

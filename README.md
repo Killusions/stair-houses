@@ -259,6 +259,8 @@ STAIR_HOUSES_SSL_CERT="<file path to ssl certificate (can be omitted, then http/
 STAIR_HOUSES_SSL_KEY="<file path to ssl private key (can be omitted together with the certificate)>"
 STAIR_HOUSES_FRONTEND_HOST="stair.ch"
 STAIR_HOUSES_FRONTEND_PORT="<Port the frontend uses, can be omitted to use dev server. SET IN PRODUCTION!>"
+STAIR_HOUSES_FRONTEND_PATH="<Path the frontend uses, can be omitted if path is root or to use dev server.>"
+STAIR_HOUSES_FRONTEND_PROTOCOL="<Protocol the frontend uses, default is http://>"
 STAIR_HOUSES="<Path the frontend uses, can be omitted if path is root or to use dev server.>"
 STAIR_HOUSES_DEFAULT_PASSWORD="<default password to be set on first connection to database, if not set already, SHOULD BE REMOVED/OMITTED LATER!!!>"
 STAIR_HOUSES_DATABASE_HOST="localhost"
@@ -273,7 +275,7 @@ STAIR_HOUSES_MAIL_USE_TLS="<Wether E-Mail should use TLS (false if omitted)>"
 STAIR_HOUSES_MAIL_USERNAME="<E-Mail server username (can be omitted to disable E-Mails)>"
 STAIR_HOUSES_MAIL_PASSWORD="<E-Mail server password (can be omitted to disable E-Mails)>"
 STAIR_HOUSES_MAIL_ADDRESS="<E-Mail sender address (can be omitted to disable E-Mails)>"
-STAIR_HOUSES_CSV_PATH="<Path to the csv file containing the students emails and team allocations (user actions will not work if omitted) (default: students_list.csv)>"
+STAIR_HOUSES_CSV_PATH="<Path to the csv file containing the students emails and team allocations (file or variable can be removed if no update is needed, user actions will not work if it was never provided) (default: students_list.csv)>"
 ```
 
 These can also be set in a `.env` file in the directory it's run from. WARNING: Unlike in the frontend, they will be used for every run (including testing and development). They are not needed at compile time and can be omitted for most testing and development setups.

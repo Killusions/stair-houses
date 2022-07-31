@@ -1,12 +1,17 @@
 import { hash, verify } from 'argon2';
 import { generateFrontendLink } from './index.js';
-import type { StringSetting, UserInfoPrivate, UsersList } from './model';
-import { getSettingsCollection, getUsersCollection } from './data.js';
+import type { StringSetting, UserInfoCombined, StudentInfo } from './model';
+import {
+  getSettingsCollection,
+  getStudentsCollection,
+  getUsersCollection,
+} from './data.js';
 import { makeId } from './id.js';
 import { base64Encode } from './base64.js';
 import { mailAddress, sendMail } from './mailer.js';
 import { timeOutCaptchaAndResponse } from './spamPrevention.js';
 import 'dotenv/config';
+import crypto from 'crypto';
 import {
   APP_NAME,
   COLORS,
@@ -21,83 +26,224 @@ import { parse } from 'csv-parse';
 import 'dotenv/config';
 import { ReplaySubject } from 'rxjs';
 
-let usersList: ReplaySubject<UsersList | undefined> | undefined = undefined;
-let usersListError = false;
-let usersListDate: Date | null = null;
+let studentsListWait: ReplaySubject<boolean | StudentInfo[]> | undefined =
+  undefined;
+let studentsListError = false;
+let studentsListDate: Date | null = null;
 
-const getUsersList = () =>
-  new Promise<UsersList | undefined>((resolve, reject) => {
-    try {
-      (async () => {
-        if (usersListError) {
-          resolve(undefined);
-          return;
-        }
-        if (!process.env.STAIR_HOUSES_CSV_PATH) {
-          console.log('No students list found');
-          resolve(undefined);
+const getStudentByMail = async (email: string) => {
+  const studentsCollection = await getStudentsCollection();
+  return await studentsCollection.findOne({ email });
+};
+
+const getStudentsListIfNotGiven = async (list: StudentInfo[] | true) => {
+  if (list !== true) {
+    return list;
+  }
+  const studentsCollection = await getStudentsCollection();
+  return (await studentsCollection.find({})).toArray();
+};
+
+const getStudentOrList = (email?: string) =>
+  new Promise<StudentInfo | StudentInfo[] | null>((resolve, reject) => {
+    (async () => {
+      try {
+        if (studentsListError) {
+          resolve(null);
           return;
         }
         if (
-          usersList &&
-          usersListDate &&
-          usersListDate.getTime() > Date.now() - 1000 * 60 * 60
+          studentsListWait &&
+          studentsListDate &&
+          studentsListDate.getTime() > Date.now() - 1000 * 60 * 60
         ) {
-          usersList.subscribe((item) => {
-            resolve(item);
-          });
-          return;
-        }
-
-        usersList = new ReplaySubject();
-
-        const __filename = fileURLToPath(import.meta.url);
-        const __dirname = dirname(__filename);
-
-        const studentsListFile = await readFile(
-          __dirname + '/../' + process.env.STAIR_HOUSES_CSV_PATH,
-          'utf-8'
-        );
-        if (studentsListFile) {
-          parse(studentsListFile, (err, rows: [string, string, string][]) => {
-            if (err) {
-              throw err;
+          studentsListWait.subscribe((item) => {
+            if (item) {
+              (async () => {
+                try {
+                  if (email) {
+                    resolve(await getStudentByMail(email));
+                  } else {
+                    resolve(await getStudentsListIfNotGiven(item));
+                  }
+                } catch (err) {
+                  reject(err);
+                }
+              })();
+            } else {
+              resolve(null);
             }
-            const newUsersList = {} as UsersList;
-            rows.forEach((item) => {
-              if (usersList) {
-                newUsersList[item[0]] = {
-                  description: item[1],
-                  color: Object.values(COLORS).includes(item[2])
-                    ? Object.keys(COLORS).includes(item[2].toLocaleLowerCase())
-                      ? (item[2].toLocaleLowerCase() as keyof typeof COLORS)
-                      : undefined
-                    : undefined,
-                };
-              }
-            });
-            if (!usersList) {
-              usersList = new ReplaySubject();
-            }
-            usersList.next(newUsersList);
-            usersListDate = new Date();
-            resolve(newUsersList);
           });
         } else {
-          usersListError = true;
-          resolve(undefined);
+          studentsListWait = new ReplaySubject();
+
+          const settingsCollection = await getSettingsCollection();
+
+          const studentsListHashObject = (await settingsCollection.findOne({
+            key: 'studentsListHash',
+            type: 'string',
+          })) as StringSetting | undefined;
+
+          let studentsListHash: string | undefined;
+
+          if (studentsListHashObject) {
+            studentsListHash = studentsListHashObject.value;
+          }
+
+          if (process.env.STAIR_HOUSES_CSV_PATH) {
+            const __filename = fileURLToPath(import.meta.url);
+            const __dirname = dirname(__filename);
+
+            try {
+              const studentsListFile = await readFile(
+                __dirname + '/../' + process.env.STAIR_HOUSES_CSV_PATH,
+                'utf-8'
+              );
+              if (studentsListFile) {
+                parse(
+                  studentsListFile,
+                  (err, rows: [string, string, string][]) => {
+                    if (err) {
+                      throw err;
+                    }
+                    const newStudentsList = rows.map((item) => ({
+                      email: item[0],
+                      description: item[1],
+                      color: Object.values(COLORS).includes(item[2])
+                        ? Object.keys(COLORS).includes(
+                            item[2].toLocaleLowerCase()
+                          )
+                          ? (item[2].toLocaleLowerCase() as keyof typeof COLORS)
+                          : undefined
+                        : undefined,
+                      date: new Date(),
+                    })) as StudentInfo[];
+                    if (!studentsListWait) {
+                      studentsListWait = new ReplaySubject();
+                    }
+                    const hashSum = crypto.createHash('sha256');
+                    hashSum.update(studentsListFile);
+                    const base64Hash = hashSum.digest('base64');
+                    (async () => {
+                      try {
+                        if (
+                          !studentsListHash ||
+                          base64Hash !== studentsListHash
+                        ) {
+                          let removedOld = true;
+                          if (studentsListHash) {
+                            const removeOldHashResult =
+                              await settingsCollection.deleteOne({
+                                key: 'studentsListHash',
+                                type: 'string',
+                              });
+                            if (removeOldHashResult.deletedCount !== 0) {
+                              removedOld = false;
+                            } else {
+                              const studentsCollection =
+                                await getStudentsCollection();
+                              const removeOldStudentsResult =
+                                await studentsCollection.deleteMany({});
+                              if (removeOldStudentsResult.deletedCount !== 0) {
+                                removedOld = false;
+                              }
+                            }
+                          }
+                          if (removedOld) {
+                            const studentsCollection =
+                              await getStudentsCollection();
+                            const insertNewStudentsResult =
+                              await studentsCollection.insertMany(
+                                newStudentsList
+                              );
+                            if (insertNewStudentsResult.acknowledged) {
+                              const insertNewHashResult =
+                                await settingsCollection.insertOne({
+                                  key: 'studentsListHash',
+                                  value: base64Hash,
+                                  type: 'string',
+                                });
+                              if (insertNewHashResult.acknowledged) {
+                                studentsListWait.next(newStudentsList);
+                                studentsListDate = new Date();
+                                if (email) {
+                                  resolve(await getStudentByMail(email));
+                                } else {
+                                  resolve(
+                                    await getStudentsListIfNotGiven(
+                                      newStudentsList
+                                    )
+                                  );
+                                }
+                                return;
+                              }
+                            }
+                          }
+                        } else if (studentsListHash) {
+                          studentsListWait.next(true);
+                          studentsListDate = new Date();
+                          if (email) {
+                            resolve(await getStudentByMail(email));
+                          } else {
+                            resolve(await getStudentsListIfNotGiven(true));
+                          }
+                          return;
+                        }
+                        console.log('Could not store students list');
+                        studentsListWait.next(false);
+                        studentsListError = true;
+                        resolve(null);
+                      } catch (err) {
+                        studentsListWait.next(false);
+                        studentsListError = true;
+                        reject(err);
+                      }
+                    })();
+                  }
+                );
+              } else {
+                console.log('Could not read students list');
+                studentsListWait.next(false);
+                studentsListError = true;
+                resolve(null);
+              }
+            } catch (err) {
+              if (studentsListHash) {
+                studentsListWait.next(true);
+                resolve(await getStudentsListIfNotGiven(true));
+              } else {
+                console.log('Students list file not found');
+                studentsListWait.next(false);
+                studentsListError = true;
+                resolve(null);
+              }
+            }
+          } else {
+            if (studentsListHash) {
+              studentsListWait.next(true);
+              resolve(await getStudentsListIfNotGiven(true));
+            } else {
+              console.log('No students list found');
+              studentsListWait.next(false);
+              studentsListError = true;
+              resolve(null);
+            }
+          }
         }
-      })();
-    } catch (err) {
-      usersListError = true;
-      reject(err);
-    }
+      } catch (err) {
+        studentsListError = true;
+        reject(err);
+      }
+    })();
   });
 
-//Todo: implement
-(async () => {
-  await getUsersList();
-})();
+const getStudentColor = async (email: string) => {
+  const student = (await getStudentOrList(email)) as StudentInfo;
+  if (student) {
+    return student.color;
+  }
+  return '';
+};
 
 export const checkEmail = (email?: string): boolean =>
   !!email &&
@@ -393,8 +539,7 @@ export const verifyUserEmail = async (
   admin?: boolean;
   resetCode?: string;
   infosSet?: boolean;
-  houseConfirmed?: keyof typeof COLORS;
-  current?: boolean;
+  currentHouse?: keyof typeof COLORS;
 }> => {
   const usersCollection = await getUsersCollection();
 
@@ -417,6 +562,7 @@ export const verifyUserEmail = async (
   if (code && (await verifyPassword(registeredUser.verifyHash, code))) {
     const passwordNew = makeId(15);
     const passwordHashed = await hashPassword(passwordNew);
+    const confirmedColor = await getStudentColor(registeredUser.email);
     await usersCollection.updateOne(
       {
         customId: userId,
@@ -439,8 +585,7 @@ export const verifyUserEmail = async (
       admin: false,
       resetCode: passwordNew,
       infosSet: registeredUser.infosSet,
-      houseConfirmed: registeredUser.houseConfirmed,
-      current: registeredUser.current,
+      currentHouse: confirmedColor || undefined,
     };
   } else {
     return { success: false };
@@ -526,7 +671,6 @@ export const registerOrEmailLoginInternal = async (
       verifyStay: stay,
       registerDate: new Date(),
       infosSet: false,
-      current: false,
     });
     await usersCollection.deleteMany({
       email: lowercaseEmail,
@@ -655,14 +799,27 @@ export const loginUser = async (
     });
     if (user && user.hash) {
       const result = await verifyPassword(user.hash, password);
+      const confirmedColor = await getStudentColor(email);
       if (result) {
-        return {
-          success: true,
-          userId: user.customId,
-          infosSet: user.infosSet,
-          houseConfirmed: user.houseConfirmed,
-          current: user.current,
-        };
+        if (
+          (
+            await usersCollection.updateOne(
+              { customId: user.customId },
+              {
+                $currentDate: {
+                  lastLogin: true,
+                },
+              }
+            )
+          ).modifiedCount > 0
+        ) {
+          return {
+            success: true,
+            userId: user.customId,
+            infosSet: user.infosSet,
+            currentHouse: confirmedColor || undefined,
+          };
+        }
       }
     }
     return { success: false };
@@ -698,7 +855,7 @@ export const getUserName = async (userId: string): Promise<string> => {
 
 export const getUserInfo = async (
   userId: string
-): Promise<UserInfoPrivate | null> => {
+): Promise<UserInfoCombined | null> => {
   const usersCollection = await getUsersCollection();
 
   const user = await usersCollection.findOne({
@@ -718,57 +875,19 @@ export const getUserInfo = async (
       return {
         name: 'Admin',
         infosSet: false,
-        current: false,
       };
     }
   }
 
   if (user) {
+    const confirmedColor = await getStudentColor(user.email);
     return {
       name: user.name ?? user.email,
       infosSet: user.infosSet,
-      houseConfirmed: user.houseConfirmed,
-      current: user.current,
+      currentHouse: confirmedColor || undefined,
     };
   }
   return null;
-};
-
-export const userHouseConfirmed = async (
-  userId: string,
-  house: keyof typeof COLORS
-) => {
-  const usersCollection = await getUsersCollection();
-
-  return (
-    (
-      await usersCollection.updateOne(
-        {
-          customId: userId,
-        },
-        {
-          $set: { houseConfirmed: house },
-        }
-      )
-    ).modifiedCount > 0
-  );
-};
-
-export const userCurrent = async (userId: string, current: boolean) => {
-  const usersCollection = await getUsersCollection();
-
-  return (
-    (
-      await usersCollection.updateOne(
-        {
-          customId: userId,
-        },
-        {
-          $set: { current },
-        }
-      )
-    ).modifiedCount > 0
-  );
 };
 
 export const sendUserMail = async (

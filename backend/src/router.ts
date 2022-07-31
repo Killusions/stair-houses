@@ -32,8 +32,7 @@ const sessions: {
     userId: string;
     ip?: string;
     infosSet?: boolean;
-    houseConfirmed?: keyof typeof COLORS;
-    current?: boolean;
+    currentHouse?: keyof typeof COLORS;
   };
 } = {};
 
@@ -43,8 +42,7 @@ const addSession = (
   stay = false,
   isAdmin = false,
   infosSet?: boolean,
-  houseConfirmed?: keyof typeof COLORS,
-  current?: boolean
+  currentHouse?: keyof typeof COLORS
 ) => {
   let sessionId = '';
   if (!userId) {
@@ -70,8 +68,7 @@ const addSession = (
       ip: stay ? undefined : ip,
       userId,
       infosSet,
-      houseConfirmed,
-      current,
+      currentHouse,
     };
   }
   Object.keys(sessions).forEach((id) => {
@@ -120,8 +117,7 @@ const getSessionData = (sessionId: string) => {
   if (session) {
     return {
       infosSet: session.infosSet,
-      houseConfirmed: session.houseConfirmed,
-      current: session.current,
+      currentHouse: session.currentHouse,
     };
   }
   return null;
@@ -137,17 +133,17 @@ const getSetSession = (sessionId: string, ip: string, userId: string) => {
   return null;
 };
 
-// const getConfirmedSession = (sessionId: string, ip: string, userId: string) => {
+// const getEligibleSession = (sessionId: string, ip: string, userId: string) => {
 //   if (verifySession(sessionId, ip, userId)) {
 //     const sessionData = getSessionData(sessionId);
-//     if (sessionData && sessionData.infosSet && sessionData.houseConfirmed) {
+//     if (sessionData && sessionData.infosSet && sessionData.currentHouse) {
 //       return sessionData;
 //     }
 //   }
 //   return null;
 // };
 
-// const isConfirmedCurrentSession = (
+// const isEligibleSession = (
 //   sessionId: string,
 //   ip: string,
 //   userId: string
@@ -157,8 +153,7 @@ const getSetSession = (sessionId: string, ip: string, userId: string) => {
 //     if (
 //       sessionData &&
 //       sessionData.infosSet &&
-//       sessionData.houseConfirmed &&
-//       sessionData.current
+//       sessionData.currentHouse
 //     ) {
 //       return true;
 //     }
@@ -169,13 +164,11 @@ const getSetSession = (sessionId: string, ip: string, userId: string) => {
 const updateSessionData = (
   sessionId: string,
   infosSet = false,
-  houseConfirmed?: keyof typeof COLORS,
-  current = false
+  currentHouse?: keyof typeof COLORS
 ) => {
   if (sessions[sessionId]) {
     sessions[sessionId].infosSet = infosSet;
-    sessions[sessionId].houseConfirmed = houseConfirmed;
-    sessions[sessionId].current = current;
+    sessions[sessionId].currentHouse = currentHouse;
   }
 };
 
@@ -291,8 +284,7 @@ export const appRouter = trpc
             updateSessionData(
               input.sessionId,
               info.infosSet,
-              info.houseConfirmed,
-              info.current
+              info.currentHouse
             );
             return info;
           }
@@ -369,8 +361,7 @@ export const appRouter = trpc
       admin?: boolean;
       code?: string;
       infosSet?: boolean;
-      houseConfirmed?: keyof typeof COLORS;
-      current?: boolean;
+      currentHouse?: keyof typeof COLORS;
     }> {
       try {
         const result = await verifyUserEmail(input.userId, input.code);
@@ -382,8 +373,7 @@ export const appRouter = trpc
             result.stay,
             result.admin,
             result.infosSet,
-            result.houseConfirmed,
-            result.current
+            result.currentHouse
           );
           return {
             success: result.success,
@@ -392,8 +382,7 @@ export const appRouter = trpc
             admin: result.admin,
             code: result.resetCode,
             infosSet: result.infosSet,
-            houseConfirmed: result.houseConfirmed,
-            current: result.current,
+            currentHouse: result.currentHouse,
           };
         }
         return { success: false };
@@ -455,8 +444,7 @@ export const appRouter = trpc
             updateSessionData(
               input.sessionId,
               true,
-              userInfo ? userInfo.houseConfirmed : undefined,
-              userInfo ? userInfo.current : false
+              userInfo ? userInfo.currentHouse : undefined
             );
             return userInfo;
           }
@@ -491,8 +479,7 @@ export const appRouter = trpc
             updateSessionData(
               input.sessionId,
               true,
-              userInfo ? userInfo.houseConfirmed : undefined,
-              userInfo ? userInfo.current : false
+              userInfo ? userInfo.currentHouse : undefined
             );
             return userInfo;
           }
@@ -518,8 +505,7 @@ export const appRouter = trpc
       admin?: boolean;
       userId?: string;
       infosSet?: boolean;
-      houseConfirmed?: keyof typeof COLORS;
-      current?: boolean;
+      currentHouse?: keyof typeof COLORS;
     }> {
       try {
         const ip = getIp(ctx as Context);
@@ -537,8 +523,7 @@ export const appRouter = trpc
               admin: true,
               userId: result.userId,
               infosSet: result.infosSet,
-              houseConfirmed: result.houseConfirmed,
-              current: result.current,
+              currentHouse: result.currentHouse,
             };
           } else {
             const sessionId = addSession(
@@ -547,8 +532,7 @@ export const appRouter = trpc
               input.stay,
               false,
               result.infosSet,
-              result.houseConfirmed,
-              result.current
+              result.currentHouse
             );
             return {
               success: true,
@@ -557,8 +541,7 @@ export const appRouter = trpc
               nextTry: result.nextTry,
               userId: result.userId,
               infosSet: result.infosSet,
-              houseConfirmed: result.houseConfirmed,
-              current: result.current,
+              currentHouse: result.currentHouse,
             };
           }
         }
@@ -641,15 +624,20 @@ export const appRouter = trpc
     },
   });
 
-setInterval(async () => {
-  try {
-    if (dataChanged) {
-      dataChanged = false;
-      dataChangedEvent.next(await getPointsWithStats());
-    }
-  } catch (e: unknown) {
-    throw internalServerError(e);
-  }
-}, REFRESH_INTERVAL);
+setInterval(
+  () =>
+    (async () => {
+      try {
+        if (dataChanged) {
+          dataChanged = false;
+          dataChangedEvent.next(await getPointsWithStats());
+        }
+      } catch (e: unknown) {
+        console.error(e);
+        process.exitCode = 1;
+      }
+    })(),
+  REFRESH_INTERVAL
+);
 
 export type AppRouter = typeof appRouter;
