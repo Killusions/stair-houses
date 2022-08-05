@@ -30,6 +30,9 @@ export interface PointEvent {
   addedBy?: string;
   owner?: string;
   reason?: string;
+  claimedFromCode?: boolean;
+  claimedBy?: string;
+  claimedByAdmin?: boolean;
 }
 
 export interface BaseSetting {
@@ -107,4 +110,42 @@ export interface StudentInfo {
   description: string;
   color: keyof typeof COLORS;
   date: Date;
+}
+
+export interface PointsCode {
+  displayReason?: string;
+  amountMin?: number;
+  amountMax?: number;
+  allowedHouses?: (keyof typeof COLORS)[];
+  allowSettingHouse?: boolean;
+  autoSetHouse?: boolean;
+  allowSettingReason?: boolean;
+  allowedOwners?: string[];
+  allowSettingOwner?: boolean;
+  autoSetOwner?: boolean;
+  dateMin?: Date;
+  dateMax?: Date;
+}
+
+export interface PointsCodePrivate extends PointsCode {
+  code: string;
+  internalReason?: string;
+  allowedOwners: string[];
+  showAllowedOwners?: boolean;
+  allowedHouses: (keyof typeof COLORS)[];
+  showAllowedHouses?: boolean;
+  house?: string;
+  maxRedeems?: number;
+  redeems: number;
+  reason?: string;
+  owner?: string;
+  redeemDateStart?: Date;
+  redeemDateEnd?: Date;
+  redeemers: { [key: string]: number };
+  redeemablePerRedeemer: number;
+  redeemedHouses: { [key in keyof typeof COLORS]: number };
+  redeemablePerHouse: number;
+  onlyAdmin?: boolean;
+  onlyEligible?: boolean;
+  onlyLoggedIn?: boolean;
 }

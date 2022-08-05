@@ -245,7 +245,7 @@ const getStudentColor = async (email: string) => {
   return '';
 };
 
-export const checkEmail = (email?: string): boolean =>
+const checkEmail = (email?: string): boolean =>
   !!email &&
   email.endsWith(EMAIL_ENDING) &&
   !!email.match(EMAIL_REGEX) &&
@@ -890,12 +890,7 @@ export const getUserInfo = async (
   return null;
 };
 
-export const sendUserMail = async (
-  userId: string,
-  subject: string,
-  body: string,
-  html?: string
-) => {
+export const getUserMail = async (userId: string) => {
   const usersCollection = await getUsersCollection();
 
   const user = await usersCollection.findOne({
@@ -903,7 +898,22 @@ export const sendUserMail = async (
   });
 
   if (user) {
-    await sendMail(user.email, subject, body, html);
+    return user.email;
+  }
+
+  return '';
+};
+
+export const sendUserMail = async (
+  userId: string,
+  subject: string,
+  body: string,
+  html?: string
+) => {
+  const email = await getUserMail(userId);
+
+  if (email) {
+    await sendMail(email, subject, body, html);
   }
 
   return false;

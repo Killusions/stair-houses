@@ -4,6 +4,7 @@ import { makeId } from './id.js';
 import type {
   PointEvent,
   Points,
+  PointsCodePrivate,
   Setting,
   StringSetting,
   StudentInfo,
@@ -46,6 +47,7 @@ const pointEventsCollectionName = 'pointEvents';
 const settingsCollectionName = 'settings';
 const usersCollectionName = 'users';
 const studentsCollectionName = 'students';
+const codesCollectionName = 'codes';
 
 let connected = false;
 let connecting = false;
@@ -62,6 +64,7 @@ let pointEventsCollection: Collection<PointEvent> | undefined = undefined;
 let settingsCollection: Collection<Setting> | undefined = undefined;
 let usersCollection: Collection<User> | undefined = undefined;
 let studentsCollection: Collection<StudentInfo> | undefined = undefined;
+let codesCollection: Collection<PointsCodePrivate> | undefined = undefined;
 
 const ensureDBConnection = () => {
   if (connected) {
@@ -110,6 +113,7 @@ const ensureDBConnection = () => {
         settingsCollection = db.collection<Setting>(settingsCollectionName);
         usersCollection = db.collection<User>(usersCollectionName);
         studentsCollection = db.collection<StudentInfo>(studentsCollectionName);
+        codesCollection = db.collection<PointsCodePrivate>(codesCollectionName);
 
         const passwordObject = (await settingsCollection.findOne({
           key: 'password',
@@ -223,4 +227,9 @@ export const getUsersCollection = async () => {
 export const getStudentsCollection = async () => {
   await ensureDBConnection();
   return studentsCollection as Collection<StudentInfo>;
+};
+
+export const getCodesCollection = async () => {
+  await ensureDBConnection();
+  return codesCollection as Collection<PointsCodePrivate>;
 };

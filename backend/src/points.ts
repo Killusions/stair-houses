@@ -93,7 +93,10 @@ export const addPoints = async (
   number: number,
   date?: Date,
   owner?: string,
-  reason?: string
+  reason?: string,
+  claimedBy?: string,
+  claimedFromCode = false,
+  claimedByAdmin = false
 ) => {
   const pointsCollection = await getPointsCollection();
   const pointEventsCollection = await getPointEventsCollection();
@@ -114,6 +117,9 @@ export const addPoints = async (
     addedBy: 'Web',
     owner,
     reason,
+    claimedFromCode,
+    claimedBy,
+    claimedByAdmin,
   });
 
   return await getPointsWithStats();

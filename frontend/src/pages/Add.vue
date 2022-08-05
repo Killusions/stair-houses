@@ -3,7 +3,7 @@
   import {
     authFailure,
     checkSession,
-    hasConfirmedCurrentUserSession,
+    hasConfirmedUserSession,
     hasSetUserSession,
     hasUserSession,
   } from '../data';
@@ -21,7 +21,7 @@
     router.push('/admin');
   } else if (!hasSetUserSession()) {
     router.push('/login');
-  } else if (!hasConfirmedCurrentUserSession()) {
+  } else if (!hasConfirmedUserSession()) {
     router.push('/login');
   } else {
     checkSession();

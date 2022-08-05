@@ -16,8 +16,10 @@ import {
   setUserInfo,
   changeUserInfo,
   resetUserInfo,
+  getUserMail,
 } from './users.js';
 import { Context } from './context.js';
+import { addCode, getCurrentCode, redeemCode } from './codes.js';
 
 let dataChanged = false;
 const dataChangedEvent = new Subject<PointsWithStats[]>();
@@ -618,6 +620,206 @@ export const appRouter = trpc
       try {
         const ip = getIp(ctx as Context);
         return deleteSessions(input.sessionId, ip, input.userId, input.all);
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .query('getCode', {
+    input: z.object({
+      sessionId: z.string().length(20),
+      userId: z.string().nonempty().length(20),
+      code: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        const session = getSetSession(input.sessionId, ip, input.userId);
+        if (session) {
+          const isAdmin = verifySession(
+            input.sessionId,
+            ip,
+            input.userId,
+            true
+          );
+          const userEmail = isAdmin
+            ? undefined
+            : (await getUserMail(input.userId)) || undefined;
+          if (isAdmin || userEmail) {
+            getCurrentCode(
+              input.code,
+              session.currentHouse,
+              userEmail,
+              isAdmin
+            );
+          }
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .mutation('redeemCode', {
+    input: z.object({
+      sessionId: z.string().length(20),
+      userId: z.string().nonempty().length(20),
+      code: z.string().length(20),
+      amount: z.number().min(-1000).max(1000),
+      date: z.number().nonnegative(),
+      house: z.string().nonempty().max(20).optional(),
+      reason: z.string().nonempty().max(1000).optional(),
+      owner: z.string().nonempty().max(100).optional(),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (!input.house || Object.keys(COLORS).includes(input.house)) {
+          const session = getSetSession(input.sessionId, ip, input.userId);
+          if (session) {
+            const date = new Date(input.date);
+            if (!isNaN(date.getTime())) {
+              const isAdmin = verifySession(
+                input.sessionId,
+                ip,
+                input.userId,
+                true
+              );
+              const userEmail = isAdmin
+                ? undefined
+                : (await getUserMail(input.userId)) || undefined;
+              if (isAdmin || userEmail) {
+                redeemCode(
+                  input.code,
+                  input.amount,
+                  date,
+                  input.house as keyof typeof COLORS,
+                  input.owner,
+                  input.reason,
+                  session.currentHouse,
+                  userEmail,
+                  isAdmin
+                );
+              }
+            }
+          }
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .mutation('addCode', {
+    input: z.object({
+      sessionId: z.string().length(20),
+      userId: z.string().nonempty().length(20),
+      displayReason: z.string().max(1000).optional(),
+      internalReason: z.string().max(1000).optional(),
+      amountMin: z.number().min(-1000).max(1000).optional(),
+      amountMax: z.number().min(-1000).max(1000).optional(),
+      house: z.string().nonempty().max(20).optional(),
+      reason: z.string().nonempty().max(1000).optional(),
+      dateMin: z.number().nonnegative().optional(),
+      dateMax: z.number().nonnegative().optional(),
+      redeemDateStart: z.number().nonnegative().optional(),
+      redeemDateEnd: z.number().nonnegative().optional(),
+      allowedOwners: z
+        .array(z.string().nonempty().max(100))
+        .max(1000)
+        .optional(),
+      allowedHouses: z
+        .array(z.string().nonempty().max(20))
+        .max(Object.keys(COLORS).length)
+        .optional(),
+      maxRedeems: z.number().nonnegative().max(1000).optional(),
+      redeemablePerRedeemer: z.number().nonnegative().max(1000).optional(),
+      redeemablePerHouse: z.number().nonnegative().max(1000).optional(),
+      onlyAdmin: z.boolean().optional(),
+      onlyEligible: z.boolean().optional(),
+      onlyLoggedIn: z.boolean().optional(),
+      showAllowedHouses: z.boolean().optional(),
+      allowSettingHouse: z.boolean().optional(),
+      autoSetHouse: z.boolean().optional(),
+      allowSettingReason: z.boolean().optional(),
+      owner: z.string().nonempty().max(100).optional(),
+      showAllowedOwners: z.boolean().optional(),
+      allowSettingOwner: z.boolean().optional(),
+      autoSetOwner: z.boolean().optional(),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (
+          (!input.house || Object.keys(COLORS).includes(input.house)) &&
+          (!input.allowedHouses ||
+            input.allowedHouses.every((allowedHouse) =>
+              Object.keys(COLORS).includes(allowedHouse)
+            )) &&
+          verifySession(input.sessionId, ip, input.userId, true)
+        ) {
+          let dateMin = input.dateMin ? new Date(input.dateMin) : undefined;
+          if (dateMin && isNaN(dateMin.getTime())) {
+            dateMin = undefined;
+          }
+          let dateMax = input.dateMax ? new Date(input.dateMax) : undefined;
+          if (
+            dateMax &&
+            (isNaN(dateMax.getTime()) || (dateMin && dateMax < dateMin))
+          ) {
+            dateMax = undefined;
+          }
+          let redeemDateStart = input.redeemDateStart
+            ? new Date(input.redeemDateStart)
+            : undefined;
+          if (
+            redeemDateStart &&
+            (isNaN(redeemDateStart.getTime()) || new Date() > redeemDateStart)
+          ) {
+            redeemDateStart = undefined;
+          }
+          let redeemDateEnd = input.redeemDateEnd
+            ? new Date(input.redeemDateEnd)
+            : undefined;
+          if (
+            redeemDateEnd &&
+            (isNaN(redeemDateEnd.getTime()) ||
+              new Date() > redeemDateEnd ||
+              (redeemDateStart && redeemDateEnd < redeemDateStart))
+          ) {
+            redeemDateEnd = undefined;
+          }
+          addCode(
+            input.displayReason,
+            input.internalReason,
+            input.amountMin,
+            input.amountMax,
+            input.house,
+            input.reason,
+            dateMin,
+            dateMax,
+            redeemDateStart,
+            redeemDateEnd,
+            input.allowedOwners,
+            input.allowedHouses as (keyof typeof COLORS)[] | undefined,
+            input.maxRedeems,
+            input.redeemablePerRedeemer,
+            input.redeemablePerHouse,
+            input.onlyAdmin,
+            input.onlyEligible,
+            input.onlyLoggedIn,
+            input.showAllowedHouses,
+            input.allowSettingHouse,
+            input.autoSetHouse,
+            input.allowSettingReason,
+            input.owner,
+            input.showAllowedOwners,
+            input.allowSettingOwner,
+            input.autoSetOwner
+          );
+        } else {
+          return false;
+        }
       } catch (e: unknown) {
         throw internalServerError(e);
       }
