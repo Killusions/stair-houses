@@ -135,34 +135,6 @@ const getSetSession = (sessionId: string, ip: string, userId: string) => {
   return null;
 };
 
-// const getEligibleSession = (sessionId: string, ip: string, userId: string) => {
-//   if (verifySession(sessionId, ip, userId)) {
-//     const sessionData = getSessionData(sessionId);
-//     if (sessionData && sessionData.infosSet && sessionData.currentHouse) {
-//       return sessionData;
-//     }
-//   }
-//   return null;
-// };
-
-// const isEligibleSession = (
-//   sessionId: string,
-//   ip: string,
-//   userId: string
-// ) => {
-//   if (verifySession(sessionId, ip, userId)) {
-//     const sessionData = getSessionData(sessionId);
-//     if (
-//       sessionData &&
-//       sessionData.infosSet &&
-//       sessionData.currentHouse
-//     ) {
-//       return true;
-//     }
-//   }
-//   return false;
-// };
-
 const updateSessionData = (
   sessionId: string,
   infosSet = false,

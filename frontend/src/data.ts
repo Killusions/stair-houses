@@ -323,6 +323,7 @@ export const addPoints = async (
   try {
     if (!hasSession(true)) {
       authFailure.next();
+      return;
     }
     const data = await client.mutation('addPoints', {
       color,
@@ -374,6 +375,7 @@ export const checkSessionAsync = async (admin = false, skipLocal = false) => {
   if (!hasSession(admin)) {
     if (!skipLocal || sessionId) {
       authFailure.next();
+      return;
     }
     return false;
   }
@@ -671,6 +673,131 @@ export const logOut = async () => {
     localStorage.setItem('currentHouse', '');
     loggingOut = false;
   } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const getCode = async (code: string) => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return;
+    }
+    const data = await client.query('getCode', {
+      sessionId: sessionId,
+      userId: sessionUserId,
+      code,
+    });
+    if (!data) {
+      return;
+    }
+    return data;
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const redeemCode = async (
+  code: string,
+  amount: number,
+  date: Date,
+  house?: keyof typeof COLORS,
+  owner?: string,
+  reason?: string
+) => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return;
+    }
+    const result = await client.mutation('redeemCode', {
+      sessionId: sessionId,
+      userId: sessionUserId,
+      code,
+      amount,
+      date: date?.getTime(),
+      house,
+      owner,
+      reason,
+    });
+    return result;
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const addCode = async (
+  displayReason?: string,
+  internalReason?: string,
+  amountMin?: number,
+  amountMax?: number,
+  house?: string,
+  reason?: string,
+  dateMin?: Date,
+  dateMax?: Date,
+  redeemDateStart?: Date,
+  redeemDateEnd?: Date,
+  allowedOwners = [] as string[],
+  allowedHouses = [] as (keyof typeof COLORS)[],
+  maxRedeems = 1,
+  redeemablePerRedeemer = 1,
+  redeemablePerHouse = 1,
+  onlyAdmin = false,
+  onlyEligible = true,
+  onlyLoggedIn = true,
+  showAllowedHouses = true,
+  allowSettingHouse = false,
+  autoSetHouse = true,
+  allowSettingReason = false,
+  owner = '',
+  showAllowedOwners = false,
+  allowSettingOwner = false,
+  autoSetOwner = true
+) => {
+  try {
+    if (!hasSession(true)) {
+      authFailure.next();
+      return;
+    }
+    const code = await client.mutation('addCode', {
+      sessionId: sessionId,
+      userId: sessionUserId,
+      displayReason,
+      internalReason,
+      amountMin,
+      amountMax,
+      house,
+      reason,
+      dateMin: dateMin?.getTime(),
+      dateMax: dateMax?.getTime(),
+      redeemDateStart: redeemDateStart?.getTime(),
+      redeemDateEnd: redeemDateEnd?.getTime(),
+      allowedOwners,
+      allowedHouses,
+      maxRedeems,
+      redeemablePerRedeemer,
+      redeemablePerHouse,
+      onlyAdmin,
+      onlyEligible,
+      onlyLoggedIn,
+      showAllowedHouses,
+      allowSettingHouse,
+      autoSetHouse,
+      allowSettingReason,
+      owner,
+      showAllowedOwners,
+      allowSettingOwner,
+      autoSetOwner,
+    });
+    if (!code) {
+      authFailure.next();
+      return;
+    }
+    return code;
+  } catch (e: unknown) {
     console.error(e);
     throw e;
   }
