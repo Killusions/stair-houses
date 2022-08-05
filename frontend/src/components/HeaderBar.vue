@@ -114,10 +114,9 @@
       </router-link>
       <button
         v-if="
-          ($router.currentRoute.value.path === '/' ||
-            $router.currentRoute.value.path === '/user' ||
-            $router.currentRoute.value.path === '/admin') &&
-          secret
+          $router.currentRoute.value.path === '/' ||
+          ($router.currentRoute.value.path === '/user' && secret) ||
+          $router.currentRoute.value.path === '/admin'
         "
         class="view-toggle"
         @click="ranking = !ranking"
@@ -271,7 +270,7 @@
   }
 
   .modal-container {
-    height: 80%;
+    max-height: 80%;
     width: 70%;
     padding: 1rem;
     background-color: rgb(126, 126, 126);

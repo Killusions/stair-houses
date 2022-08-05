@@ -10,6 +10,8 @@ export const ranking = ref(false);
 
 export const secret = ref(false);
 
+export const codesModal = ref(false);
+
 export const loggedIn = ref(hasSession());
 export const userLoggedIn = ref(hasUserSession());
 export const userSet = ref(hasSetUserSession());
