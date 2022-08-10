@@ -5,7 +5,8 @@ import App from './App.vue';
 import Home from './pages/Home.vue';
 import Admin from './pages/Admin.vue';
 import User from './pages/User.vue';
-import Add from './pages/Add.vue';
+import Codes from './pages/Codes.vue';
+import Redeem from './pages/Redeem.vue';
 import Login from './pages/Login.vue';
 import StateInfo from './pages/StateInfo.vue';
 
@@ -21,7 +22,9 @@ const routes = [
   { path: '/admin', component: Admin },
   { path: '/user', component: User },
   { path: '/login', component: Login },
-  { path: '/add', component: Add },
+  { path: '/codes', component: Codes },
+  { path: '/redeem/:code', component: Redeem },
+  { path: '/redeem', component: Redeem },
   { path: '/stateinfo', component: StateInfo },
 ];
 

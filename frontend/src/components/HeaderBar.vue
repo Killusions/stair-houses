@@ -88,7 +88,7 @@
       <router-link
         v-if="
           ($router.currentRoute.value.path === '/plans' ||
-            $router.currentRoute.value.path === '/add' ||
+            $router.currentRoute.value.path === '/redeem' ||
             $router.currentRoute.value.path === '/login' ||
             $router.currentRoute.value.path === '/stateinfo') &&
           userSet
@@ -99,18 +99,11 @@
         Scores
       </router-link>
       <router-link
-        v-if="
-          ($router.currentRoute.value.path === '/user' ||
-            $router.currentRoute.value.path === '/plans' ||
-            $router.currentRoute.value.path === '/login' ||
-            $router.currentRoute.value.path === '/stateinfo') &&
-          userCurrentConfirmed &&
-          !showFilterPanel
-        "
-        to="/add"
+        v-if="$router.currentRoute.value.path === '/admin'"
+        to="/codes"
         class="view-toggle"
       >
-        Add
+        Codes
       </router-link>
       <button
         v-if="
@@ -140,6 +133,27 @@
         Filters
         <span class="icon icon-pencil"></span>
       </button>
+      <router-link
+        v-if="$router.currentRoute.value.path === '/add'"
+        to="/admin"
+        class="view-toggle"
+      >
+        Scores
+      </router-link>
+      <router-link
+        v-if="
+          ($router.currentRoute.value.path === '/user' ||
+            $router.currentRoute.value.path === '/plans' ||
+            $router.currentRoute.value.path === '/login' ||
+            $router.currentRoute.value.path === '/stateinfo') &&
+          userCurrentConfirmed &&
+          !showFilterPanel
+        "
+        to="/redeem"
+        class="view-toggle"
+      >
+        Redeem
+      </router-link>
     </div>
     <Transition v-if="showFilterPanel" name="modal">
       <div v-if="showModal" class="modal-mask">

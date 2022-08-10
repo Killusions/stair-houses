@@ -242,6 +242,10 @@ To configure and build it for production, set the following environment variable
 VITE_STAIR_HOUSES_PROTOCOL="wss"
 VITE_STAIR_HOUSES_BACKEND_HOST="<domain>"
 VITE_STAIR_HOUSES_BACKEND_PORT="3033"
+VITE_STAIR_HOUSES_FRONTEND_HOST="stair.ch"
+VITE_STAIR_HOUSES_FRONTEND_PORT="<Port the frontend uses, can be omitted to use dev server. SET IN PRODUCTION!>"
+VITE_STAIR_HOUSES_FRONTEND_PATH="<Path the frontend uses, can be omitted if path is root or to use dev server.>"
+VITE_STAIR_HOUSES_FRONTEND_PROTOCOL="<Protocol the frontend uses, default is http://>"
 VITE_STAIR_HOUSES_CAPTCHA_SITEKEY="<hCaptcha sitekey (can be omitted to disable captcha)>"
 ```
 

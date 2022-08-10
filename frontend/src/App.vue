@@ -11,7 +11,8 @@
       hide:
         !loading ||
         $router.currentRoute.value.path === '/login' ||
-        $router.currentRoute.value.path === '/add' ||
+        $router.currentRoute.value.path === '/codes' ||
+        $router.currentRoute.value.path === '/redeem' ||
         $router.currentRoute.value.path === '/stateinfo',
     }"
   >

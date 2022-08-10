@@ -44,6 +44,15 @@ let setExpired = 0;
 
 let userInfo: UserInfoCombined | null = null;
 
+const frontendHost = import.meta.env.STAIR_HOUSES_FRONTEND_HOST ?? 'localhost';
+const frontendPort = import.meta.env.STAIR_HOUSES_FRONTEND_PORT ?? '3000';
+const frontendPath = import.meta.env.STAIR_HOUSES_FRONTEND_PATH ?? '/#';
+const frontendProtocol =
+  import.meta.env.STAIR_HOUSES_FRONTEND_PROTOCOL ?? 'http://';
+export const redeemPath = `${frontendProtocol}${frontendHost}${
+  frontendPort ? ':' + frontendPort : ''
+}${frontendPath}/#/redeem/`;
+
 export const isLoggingOut = () => {
   return loggingOut;
 };

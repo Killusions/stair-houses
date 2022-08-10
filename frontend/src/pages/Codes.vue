@@ -1,13 +1,8 @@
 <script setup lang="ts">
   import { useRouter } from 'vue-router';
-  import {
-    authFailure,
-    checkSession,
-    hasConfirmedUserSession,
-    hasSetUserSession,
-    hasUserSession,
-  } from '../data';
+  import { authFailure, checkSession, redeemPath } from '../data';
   import { resetFilters, resetSettings, resetState } from '../settings';
+  import QrcodeVue from 'qrcode.vue';
   const router = useRouter();
 
   authFailure.subscribe(() => {
@@ -17,31 +12,24 @@
     router.push('/login');
   });
 
-  if (!hasUserSession()) {
-    router.push('/admin');
-  } else if (!hasSetUserSession()) {
-    router.push('/login');
-  } else if (!hasConfirmedUserSession()) {
-    router.push('/login');
-  } else {
-    checkSession();
-  }
+  checkSession(true);
 </script>
 
 <template>
-  <div class="content-base add">
-    <div class="addtitle">Add</div>
+  <div class="content-base codes">
+    <div class="codestitle">Codes</div>
+    <QrcodeVue :value="redeemPath + 'testtesttesttesttest'"></QrcodeVue>
   </div>
 </template>
 
 <style scoped lang="scss">
-  .add {
+  .codes {
     display: flex;
     flex-direction: column;
     align-items: center;
     font-size: 2rem;
 
-    .addtitle {
+    .codestitle {
       display: flex;
       flex-direction: row;
       align-items: center;
