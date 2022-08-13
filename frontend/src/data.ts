@@ -11,7 +11,7 @@ import superjson from 'superjson';
 import { COLORS } from '../../backend/src/constants';
 import type { DisplayColor, DisplayData } from './model';
 
-const protocol = import.meta.env.VITE_STAIR_HOUSES_PROTOCOL ?? 'ws';
+const protocol = import.meta.env.VITE_STAIR_HOUSES_BACKEND_PROTOCOL ?? 'ws';
 const host = import.meta.env.VITE_STAIR_HOUSES_BACKEND_HOST ?? 'localhost';
 const port = import.meta.env.VITE_STAIR_HOUSES_BACKEND_PORT ?? '3033';
 

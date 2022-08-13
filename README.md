@@ -239,7 +239,7 @@ To configure and build it for production, set the following environment variable
 #### Frontend
 
 ```sh
-VITE_STAIR_HOUSES_PROTOCOL="wss"
+VITE_STAIR_HOUSES_BACKEND_PROTOCOL="wss://"
 VITE_STAIR_HOUSES_BACKEND_HOST="<domain>"
 VITE_STAIR_HOUSES_BACKEND_PORT="3033"
 VITE_STAIR_HOUSES_FRONTEND_HOST="stair.ch"
