@@ -306,14 +306,14 @@ export const getCurrentCode = async (
         $or: [
           { amountMin: { $type: 'undefined' } },
           { amountMax: { $type: 'undefined' } },
-          { $gte: ['$amountMax', '$amountMin'] },
+          { $expr: { $gte: ['$amountMax', '$amountMin'] } },
         ],
       },
       {
         $or: [
           { dateMin: { $type: 'undefined' } },
           { dateMax: { $type: 'undefined' } },
-          { $gte: ['$dateMax', '$dateMin'] },
+          { $expr: { $gte: ['$dateMax', '$dateMin'] } },
         ],
       },
       ...(!isAdmin && currentHouse
@@ -400,40 +400,6 @@ export const getCurrentCode = async (
                       },
                     },
                   ],
-                },
-              ],
-            },
-          ]
-        : []),
-      ...(!isAdmin && !currentHouse
-        ? [
-            {
-              $and: [
-                { autoSetHouse: true },
-                {
-                  $expr: {
-                    $gte: [
-                      '$redeemablePerHouse',
-                      '$redeemedHouses[' + currentHouse + ']',
-                    ],
-                  },
-                },
-              ],
-            },
-          ]
-        : []),
-      ...(!isAdmin && redeemer
-        ? [
-            {
-              $and: [
-                { autoSetOwner: true },
-                {
-                  $expr: {
-                    $gte: [
-                      '$redeemablePerRedeemer',
-                      '$redeemers[' + redeemer + ']',
-                    ],
-                  },
                 },
               ],
             },

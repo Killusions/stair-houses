@@ -1,5 +1,6 @@
 import { reactive, ref } from 'vue';
 import {
+  getConfirmedUserSessionHouse,
   hasConfirmedUserSession,
   hasSession,
   hasSetUserSession,
@@ -17,6 +18,7 @@ export const userLoggedIn = ref(hasUserSession());
 export const userSet = ref(hasSetUserSession());
 export const userConfirmed = ref(hasConfirmedUserSession());
 export const userCurrentConfirmed = ref(hasConfirmedUserSession());
+export const userConfirmedHouse = ref(getConfirmedUserSessionHouse());
 
 export const resetState = () => {
   loggedIn.value = hasSession();
@@ -24,6 +26,7 @@ export const resetState = () => {
   userSet.value = hasSetUserSession();
   userConfirmed.value = hasConfirmedUserSession();
   userCurrentConfirmed.value = hasConfirmedUserSession();
+  userConfirmedHouse.value = getConfirmedUserSessionHouse();
 };
 
 export const loading = ref(true);

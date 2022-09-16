@@ -209,7 +209,7 @@
             settings.amount = 1;
           }
           if (!settings.keepDate) {
-            const currentDate = moment(new Date()).format('YYYY-MM-DDTHH:MM');
+            const currentDate = moment(new Date()).format('YYYY-MM-DDTHH:mm');
             settings.date = currentDate;
           }
           if (!settings.keepOwner) {

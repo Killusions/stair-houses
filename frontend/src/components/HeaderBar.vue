@@ -14,7 +14,7 @@
 
   defineProps({ showFilterPanel: { type: Boolean, default: false } });
 
-  let showModal = ref(false);
+  const showModal = ref(false);
 
   const clickModal = () => {
     showModal.value = !showModal.value;

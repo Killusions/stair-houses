@@ -618,7 +618,7 @@ export const appRouter = trpc
             ? undefined
             : (await getUserMail(input.userId)) || undefined;
           if (isAdmin || userEmail) {
-            getCurrentCode(
+            return getCurrentCode(
               input.code,
               session.currentHouse,
               userEmail,
@@ -661,7 +661,7 @@ export const appRouter = trpc
                 ? undefined
                 : (await getUserMail(input.userId)) || undefined;
               if (isAdmin || userEmail) {
-                redeemCode(
+                return await redeemCode(
                   input.code,
                   input.amount,
                   date,
@@ -696,10 +696,7 @@ export const appRouter = trpc
       dateMax: z.number().nonnegative().optional(),
       redeemDateStart: z.number().nonnegative().optional(),
       redeemDateEnd: z.number().nonnegative().optional(),
-      allowedOwners: z
-        .array(z.string().nonempty().max(100))
-        .max(1000)
-        .optional(),
+      allowedOwners: z.array(z.string().max(100)).max(1000).optional(),
       allowedHouses: z
         .array(z.string().nonempty().max(20))
         .max(Object.keys(COLORS).length)
@@ -714,7 +711,7 @@ export const appRouter = trpc
       allowSettingHouse: z.boolean().optional(),
       autoSetHouse: z.boolean().optional(),
       allowSettingReason: z.boolean().optional(),
-      owner: z.string().nonempty().max(100).optional(),
+      owner: z.string().max(100).optional(),
       showAllowedOwners: z.boolean().optional(),
       allowSettingOwner: z.boolean().optional(),
       autoSetOwner: z.boolean().optional(),
@@ -761,7 +758,7 @@ export const appRouter = trpc
           ) {
             redeemDateEnd = undefined;
           }
-          addCode(
+          return await addCode(
             input.displayReason,
             input.internalReason,
             input.amountMin,

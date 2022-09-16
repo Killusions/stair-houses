@@ -61,6 +61,10 @@ export const hasSession = (admin = false) => {
   return !!sessionId && sessionExpires > Date.now() && (!admin || isAdmin);
 };
 
+export const getConfirmedUserSessionHouse = () => {
+  return currentHouse;
+};
+
 export const hasConfirmedUserSession = () => {
   return hasSetUserSession() && currentHouse;
 };

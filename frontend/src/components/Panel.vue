@@ -3,7 +3,7 @@
   import { settings } from '../settings';
 
   if (!settings.date) {
-    const currentDate = moment(new Date()).format('YYYY-MM-DDTHH:MM');
+    const currentDate = moment(new Date()).format('YYYY-MM-DDTHH:mm');
     settings.date = currentDate;
   }
 </script>
