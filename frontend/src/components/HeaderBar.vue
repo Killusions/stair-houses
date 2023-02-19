@@ -4,7 +4,7 @@
 
 <template>
   <div class="header">
-    <router-link to="/" class="header-container">
+    <router-link to="/home" class="header-container">
       <img src="../assets/stairwhite.png" class="logo" />
       <div class="title">Houses</div>
     </router-link>

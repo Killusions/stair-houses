@@ -31,7 +31,7 @@
     >
     <router-link
       v-if="$router.currentRoute.value.path === '/admin'"
-      to="/"
+      to="/home"
       class="admin-link footer-item"
       @click="logOutOnclick()"
       >Log out</router-link
